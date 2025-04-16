@@ -1,4 +1,4 @@
-import type { NextApiRequest } from "next";
+import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 const postSummonerToLadderDto = z.object({
@@ -7,7 +7,7 @@ const postSummonerToLadderDto = z.object({
   summonerName: z.string(),
 });
 
-const POST = async (req: NextApiRequest) => {
+const POST = async (req: NextRequest) => {
   const { gameId, region, summonerName } = postSummonerToLadderDto.parse(req.body);
 };
 

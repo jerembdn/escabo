@@ -1,3 +1,5 @@
+import Summoner from "@/models/summoner";
+import dbConnect from "@/services/mongoose";
 import { tftClient } from "@/services/tft-client";
 import type { APIReponse } from "@/types/api-response";
 import type { RiotAccount } from "@/types/riot-account";
@@ -10,7 +12,6 @@ export async function GET(req: NextRequest, res: NextResponse<ResponseData>) {
 
 	const searchTerm = searchParams.get("term");
 	const region = searchParams.get("region");
-	const limit = Number(searchParams.get("limit")) || 10;
 
 	if (!searchTerm || !region) {
 		return Response.json(
@@ -27,10 +28,26 @@ export async function GET(req: NextRequest, res: NextResponse<ResponseData>) {
 	}
 
 	try {
+		await dbConnect();
+
+		let summoner = await Summoner.findOne({
+			summonerName: searchTerm,
+		});
+
+		if (summoner) {
+			return Response.json({
+				success: true,
+				data: summoner,
+			});
+		}
+
 		const response = await tftClient.getSummonerByName(
 			decodeURIComponent(searchTerm),
 			"EUW",
 		);
+
+		summoner = new Summoner({});
+		await summoner.save();
 
 		return Response.json({
 			success: true,
