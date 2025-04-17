@@ -1,16 +1,15 @@
-import type { Region } from "@/types/region";
+import type { Region, RegionId } from "@/types/region";
 
-export const Regions: Region[] = [
-  {
-    id: "NA",
-    name: "Amérique du Nord",
-    domain: "na1.api.riotgames.com",
-    available: false,
-  },
-  {
-    id: "EUW",
-    name: "Europe de l'Ouest",
-    domain: "euw1.api.riotgames.com",
-    available: true,
-  }
-];
+export const Regions: {
+	[key in RegionId]: Region;
+} = {
+	EUW: {
+		id: "EUW",
+		name: "Europe de l'Ouest",
+		routing: {
+			platform: "euw1.api.riotgames.com",
+			regional: "europe.api.riotgames.com",
+		},
+		available: true,
+	},
+};

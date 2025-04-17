@@ -2,670 +2,641 @@
 
 import React from "react";
 import {
-	RiSearchLine,
-	RiFilterLine,
-	RiCloseLine,
-	RiSortAsc,
-	RiSortDesc,
+  RiSearchLine,
+  RiFilterLine,
+  RiCloseLine,
+  RiSortAsc,
+  RiSortDesc,
 } from "react-icons/ri";
 
 import {
-	type DataTableColumn,
-	SortDirection,
-	type SortState,
-	type FilterState,
-} from "./types";
+  type DataTableColumn,
+  type SortState,
+  type FilterState,
+} from "../../types/table";
 import kitchn, {
-	Badge,
-	Button,
-	Checkbox,
-	convertRGBToRGBA,
-	Icon,
-	Input,
-	Spinner,
-	Text,
-	withDecorator,
-	type KitchnComponent,
+  Badge,
+  Button,
+  Checkbox,
+  convertRGBToRGBA,
+  Icon,
+  Input,
+  Spinner,
+  Text,
+  withDecorator,
+  type KitchnComponent,
 } from "kitchn";
 
-// Props for the DataTable component
-type Props<T = any> = {
-	/**
-	 * Data to be displayed in the table
-	 */
-	data: T[];
+type Props<T = undefined> = {
+  /**
+   * Data to be displayed in the table
+   */
+  data: T[];
 
-	/**
-	 * Column definitions
-	 */
-	columns: DataTableColumn<T>[];
+  /**
+   * Column definitions
+   */
+  columns: DataTableColumn<T>[];
 
-	/**
-	 * Loading state
-	 */
-	loading?: boolean;
+  /**
+   * Loading state
+   */
+  loading?: boolean;
 
-	/**
-	 * Whether to enable search
-	 */
-	searchable?: boolean;
+  /**
+   * Whether to enable search
+   */
+  searchable?: boolean;
 
-	/**
-	 * Whether to enable row selection
-	 */
-	selectable?: boolean;
+  /**
+   * Whether to enable row selection
+   */
+  selectable?: boolean;
 
-	/**
-	 * Initial sort state
-	 */
-	initialSort?: SortState;
+  /**
+   * Initial sort state
+   */
+  initialSort?: SortState;
 
-	/**
-	 * Initial filter state
-	 */
-	initialFilter?: FilterState;
+  /**
+   * Initial filter state
+   */
+  initialFilter?: FilterState;
 
-	/**
-	 * Items per page
-	 */
-	itemsPerPage?: number;
+  /**
+   * Items per page
+   */
+  itemsPerPage?: number;
 
-	/**
-	 * Whether to show pagination
-	 */
-	pagination?: boolean;
+  /**
+   * Whether to show pagination
+   */
+  pagination?: boolean;
 
-	/**
-	 * Callback for when selection changes
-	 */
-	onSelectionChange?: (selectedRows: T[]) => void;
+  /**
+   * Callback for when selection changes
+   */
+  onSelectionChange?: (selectedRows: T[]) => void;
 
-	/**
-	 * Callback for when sort changes
-	 */
-	onSortChange?: (sortState: SortState) => void;
+  /**
+   * Callback for when sort changes
+   */
+  onSortChange?: (sortState: SortState) => void;
 
-	/**
-	 * Callback for when filter changes
-	 */
-	onFilterChange?: (filterState: FilterState) => void;
+  /**
+   * Callback for when filter changes
+   */
+  onFilterChange?: (filterState: FilterState) => void;
 
-	/**
-	 * Callback for when page changes
-	 */
-	onPageChange?: (page: number) => void;
+  /**
+   * Callback for when page changes
+   */
+  onPageChange?: (page: number) => void;
 
-	/**
-	 * Empty state message
-	 */
-	emptyMessage?: React.ReactNode;
+  /**
+   * Empty state message
+   */
+  emptyMessage?: React.ReactNode;
 
-	/**
-	 * Placeholder for the search input
-	 */
-	searchPlaceholder?: string;
+  /**
+   * Placeholder for the search input
+   */
+  searchPlaceholder?: string;
 
-	/**
-	 * Whether to make the table dense
-	 */
-	dense?: boolean;
+  /**
+   * Whether to make the table dense
+   */
+  dense?: boolean;
 
-	/**
-	 * Whether to make the table fullWidth
-	 */
-	fullWidth?: boolean;
+  /**
+   * Whether to make the table fullWidth
+   */
+  fullWidth?: boolean;
 
-	/**
-	 * Custom row styling function
-	 */
-	rowClassName?: (row: T, index: number) => string;
+  /**
+   * Custom row styling function
+   */
+  rowClassName?: (row: T, index: number) => string;
 
-	/**
-	 * Custom cell styling function
-	 */
-	cellClassName?: (
-		value: any,
-		row: T,
-		columnKey: string,
-		index: number,
-	) => string;
+  /**
+   * Custom cell styling function
+   */
+  cellClassName?: (
+    value: unknown,
+    row: T,
+    columnKey: string,
+    index: number,
+  ) => string;
 };
 
-export type DataTableProps<T = any> = KitchnComponent<Props<T>>;
+export type DataTableProps<T = undefined> = KitchnComponent<Props<T>>;
 
 const DataTableComponent = <
-	T extends Record<string, any> = Record<string, any>,
+  T extends Record<string, unknown> = Record<string, unknown>,
 >({
-	data = [],
-	columns = [],
-	loading = false,
-	searchable = true,
-	selectable = false,
-	initialSort,
-	initialFilter,
-	itemsPerPage = 10,
-	pagination = true,
-	onSelectionChange,
-	onSortChange,
-	onFilterChange,
-	onPageChange,
-	emptyMessage = "No data available",
-	searchPlaceholder = "Search...",
-	dense = false,
-	fullWidth = true,
-	rowClassName,
-	cellClassName,
-	...props
+  data = [],
+  columns = [],
+  loading = false,
+  searchable = true,
+  selectable = false,
+  initialSort,
+  initialFilter,
+  itemsPerPage = 10,
+  pagination = true,
+  onSelectionChange,
+  onSortChange,
+  onFilterChange,
+  onPageChange,
+  emptyMessage = "No data available",
+  searchPlaceholder = "Search...",
+  dense = false,
+  fullWidth = true,
+  rowClassName,
+  cellClassName,
+  ...props
 }: DataTableProps<T>) => {
-	// State for sorting
-	const [sortState, setSortState] = React.useState<SortState>(
-		initialSort || { key: "", direction: null },
-	);
+  const [sortState, setSortState] = React.useState<SortState>(
+    initialSort || { key: "", direction: null },
+  );
 
-	// State for filtering
-	const [filterState, setFilterState] = React.useState<FilterState>(
-		initialFilter || {},
-	);
+  const [filterState, setFilterState] = React.useState<FilterState>(
+    initialFilter || {},
+  );
 
-	// State for pagination
-	const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
 
-	// State for search
-	const [searchQuery, setSearchQuery] = React.useState<string>("");
+  const [searchQuery, setSearchQuery] = React.useState<string>("");
 
-	// State for selection
-	const [selectedRows, setSelectedRows] = React.useState<T[]>([]);
+  const [selectedRows, setSelectedRows] = React.useState<T[]>([]);
 
-	// State for showing filter panel
-	const [showFilters, setShowFilters] = React.useState<boolean>(false);
+  const [showFilters, setShowFilters] = React.useState<boolean>(false);
 
-	// Effect to call onSelectionChange when selection changes
-	React.useEffect(() => {
-		if (onSelectionChange) {
-			onSelectionChange(selectedRows);
-		}
-	}, [selectedRows, onSelectionChange]);
+  React.useEffect(() => {
+    if (onSelectionChange) {
+      onSelectionChange(selectedRows);
+    }
+  }, [selectedRows, onSelectionChange]);
 
-	// Effect to call onSortChange when sort changes
-	React.useEffect(() => {
-		if (onSortChange) {
-			onSortChange(sortState);
-		}
-	}, [sortState, onSortChange]);
+  React.useEffect(() => {
+    if (onSortChange) {
+      onSortChange(sortState);
+    }
+  }, [sortState, onSortChange]);
 
-	// Effect to call onFilterChange when filter changes
-	React.useEffect(() => {
-		if (onFilterChange) {
-			onFilterChange(filterState);
-		}
-	}, [filterState, onFilterChange]);
+  React.useEffect(() => {
+    if (onFilterChange) {
+      onFilterChange(filterState);
+    }
+  }, [filterState, onFilterChange]);
 
-	// Effect to call onPageChange when page changes
-	React.useEffect(() => {
-		if (onPageChange) {
-			onPageChange(currentPage);
-		}
-	}, [currentPage, onPageChange]);
+  React.useEffect(() => {
+    if (onPageChange) {
+      onPageChange(currentPage);
+    }
+  }, [currentPage, onPageChange]);
 
-	// Reset pagination when data, filter, or search changes
-	React.useEffect(() => {
-		setCurrentPage(1);
-	}, [data, filterState, searchQuery]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [data, filterState, searchQuery]);
 
-	// Function to handle sort click
-	const handleSort = (key: string) => {
-		setSortState((prev) => {
-			if (prev.key === key) {
-				// Toggle direction
-				if (prev.direction === "asc") return { key, direction: "desc" };
-				if (prev.direction === "desc") return { key: "", direction: null };
-				return { key, direction: "asc" };
-			}
-			// New sort
-			return { key, direction: "asc" };
-		});
-	};
+  const handleSort = (key: string) => {
+    setSortState((prev) => {
+      if (prev.key === key) {
+        if (prev.direction === "asc") return { key, direction: "desc" };
+        if (prev.direction === "desc") return { key: "", direction: null };
 
-	// Function to handle filter change
-	const handleFilterChange = (key: string, value: string) => {
-		setFilterState((prev) => ({
-			...prev,
-			[key]: value,
-		}));
-	};
+        return { key, direction: "asc" };
+      }
 
-	// Function to clear a filter
-	const clearFilter = (key: string) => {
-		setFilterState((prev) => {
-			const newState = { ...prev };
-			delete newState[key];
-			return newState;
-		});
-	};
+      return { key, direction: "asc" };
+    });
+  };
 
-	// Function to clear all filters
-	const clearAllFilters = () => {
-		setFilterState({});
-		setSearchQuery("");
-	};
+  const handleFilterChange = (key: string, value: string) => {
+    setFilterState((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
 
-	// Function to handle row selection
-	const handleRowSelect = (row: T) => {
-		setSelectedRows((prev) => {
-			const isSelected = prev.some((r) => r === row);
-			if (isSelected) {
-				return prev.filter((r) => r !== row);
-			} else {
-				return [...prev, row];
-			}
-		});
-	};
+  const clearFilter = (key: string) => {
+    setFilterState((prev) => {
+      const newState = { ...prev };
 
-	// Function to handle select all
-	const handleSelectAll = () => {
-		if (selectedRows.length === filteredData.length) {
-			setSelectedRows([]);
-		} else {
-			setSelectedRows([...filteredData]);
-		}
-	};
+      delete newState[key];
 
-	// Filter data based on filters and search
-	const filteredData = React.useMemo(() => {
-		let result = [...data];
+      return newState;
+    });
+  };
 
-		// Apply filters
-		Object.entries(filterState).forEach(([key, value]) => {
-			if (value) {
-				result = result.filter((row) => {
-					const rowValue = String(row[key] || "").toLowerCase();
-					return rowValue.includes(value.toLowerCase());
-				});
-			}
-		});
+  const clearAllFilters = () => {
+    setFilterState({});
 
-		// Apply search across all columns
-		if (searchQuery) {
-			const query = searchQuery.toLowerCase();
-			result = result.filter((row) => {
-				return columns.some((column) => {
-					const value = String(row[column.key] || "").toLowerCase();
-					return value.includes(query);
-				});
-			});
-		}
+    setSearchQuery("");
+  };
 
-		return result;
-	}, [data, filterState, searchQuery, columns]);
+  const handleRowSelect = (row: T) => {
+    setSelectedRows((prev) => {
+      const isSelected = prev.some((r) => r === row);
 
-	// Sort data
-	const sortedData = React.useMemo(() => {
-		if (!sortState.key || !sortState.direction) return filteredData;
+      if (isSelected) {
+        return prev.filter((r) => r !== row);
+      }
 
-		return [...filteredData].sort((a, b) => {
-			const aValue = a[sortState.key];
-			const bValue = b[sortState.key];
+      return [...prev, row];
+    });
+  };
 
-			if (aValue === bValue) return 0;
+  const handleSelectAll = () => {
+    if (selectedRows.length === filteredData.length) {
+      setSelectedRows([]);
+    } else {
+      setSelectedRows([...filteredData]);
+    }
+  };
 
-			// Handle null and undefined
-			if (aValue == null) return sortState.direction === "asc" ? -1 : 1;
-			if (bValue == null) return sortState.direction === "asc" ? 1 : -1;
+  const filteredData = React.useMemo(() => {
+    let result = [...data];
 
-			// Handle numbers
-			if (typeof aValue === "number" && typeof bValue === "number") {
-				return sortState.direction === "asc"
-					? aValue - bValue
-					: bValue - aValue;
-			}
+    for (const [key, value] of Object.entries(filterState)) {
+      if (value) {
+        result = result.filter((row) => {
+          const rowValue = String(row[key] || "").toLowerCase();
+          return rowValue.includes(value.toLowerCase());
+        });
+      }
+    }
 
-			// Handle strings and other values
-			const aString = String(aValue).toLowerCase();
-			const bString = String(bValue).toLowerCase();
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((row) => {
+        return columns.some((column) => {
+          const value = String(row[column.key] || "").toLowerCase();
+          return value.includes(query);
+        });
+      });
+    }
 
-			if (sortState.direction === "asc") {
-				return aString.localeCompare(bString);
-			} else {
-				return bString.localeCompare(aString);
-			}
-		});
-	}, [filteredData, sortState.key, sortState.direction]);
+    return result;
+  }, [data, filterState, searchQuery, columns]);
 
-	// Paginate data
-	const paginatedData = React.useMemo(() => {
-		if (!pagination) return sortedData;
-		const start = (currentPage - 1) * itemsPerPage;
-		const end = start + itemsPerPage;
-		return sortedData.slice(start, end);
-	}, [sortedData, pagination, currentPage, itemsPerPage]);
+  const sortedData = React.useMemo(() => {
+    if (!sortState.key || !sortState.direction) return filteredData;
 
-	// Calculate total pages
-	const totalPages = React.useMemo(() => {
-		return Math.ceil(sortedData.length / itemsPerPage);
-	}, [sortedData.length, itemsPerPage]);
+    return [...filteredData].sort((a, b) => {
+      const aValue = a[sortState.key];
+      const bValue = b[sortState.key];
 
-	// Check if all rows are selected
-	const isAllSelected =
-		selectedRows.length === filteredData.length && filteredData.length > 0;
+      if (aValue === bValue) return 0;
 
-	// Check if any row is selected
-	const isAnySelected = selectedRows.length > 0;
+      if (aValue == null) return sortState.direction === "asc" ? -1 : 1;
+      if (bValue == null) return sortState.direction === "asc" ? 1 : -1;
 
-	// Check if a row is selected
-	const isRowSelected = (row: T) => selectedRows.includes(row);
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return sortState.direction === "asc"
+          ? aValue - bValue
+          : bValue - aValue;
+      }
 
-	// Generate buttons for pagination
-	const paginationButtons = React.useMemo(() => {
-		if (!pagination || totalPages <= 1) return null;
+      const aString = String(aValue).toLowerCase();
+      const bString = String(bValue).toLowerCase();
 
-		const buttons = [];
-		const maxButtonsToShow = 5;
-		let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
-		const endPage = Math.min(startPage + maxButtonsToShow - 1, totalPages);
+      if (sortState.direction === "asc") {
+        return aString.localeCompare(bString);
+      }
 
-		if (endPage - startPage + 1 < maxButtonsToShow) {
-			startPage = Math.max(1, endPage - maxButtonsToShow + 1);
-		}
+      return bString.localeCompare(aString);
+    });
+  }, [filteredData, sortState.key, sortState.direction]);
 
-		// Previous button
-		buttons.push(
-			<PaginationButton
-				key="prev"
-				disabled={currentPage === 1}
-				onClick={() => setCurrentPage(currentPage - 1)}
-				size="small"
-				variant="ghost"
-			>
-				Prev
-			</PaginationButton>,
-		);
+  const paginatedData = React.useMemo(() => {
+    if (!pagination) return sortedData;
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return sortedData.slice(start, end);
+  }, [sortedData, pagination, currentPage, itemsPerPage]);
 
-		// First page
-		if (startPage > 1) {
-			buttons.push(
-				<PaginationButton
-					key="1"
-					onClick={() => setCurrentPage(1)}
-					size="small"
-					variant="ghost"
-				>
-					1
-				</PaginationButton>,
-			);
-			if (startPage > 2) {
-				buttons.push(
-					<PaginationEllipsis key="start-ellipsis">...</PaginationEllipsis>,
-				);
-			}
-		}
+  const totalPages = React.useMemo(() => {
+    return Math.ceil(sortedData.length / itemsPerPage);
+  }, [sortedData.length, itemsPerPage]);
 
-		// Page buttons
-		for (let i = startPage; i <= endPage; i++) {
-			buttons.push(
-				<PaginationButton
-					key={i}
-					active={i === currentPage}
-					onClick={() => setCurrentPage(i)}
-					size="small"
-					variant={i === currentPage ? undefined : "ghost"}
-				>
-					{i}
-				</PaginationButton>,
-			);
-		}
+  const isAllSelected =
+    selectedRows.length === filteredData.length && filteredData.length > 0;
 
-		// Last page
-		if (endPage < totalPages) {
-			if (endPage < totalPages - 1) {
-				buttons.push(
-					<PaginationEllipsis key="end-ellipsis">...</PaginationEllipsis>,
-				);
-			}
-			buttons.push(
-				<PaginationButton
-					key={totalPages}
-					onClick={() => setCurrentPage(totalPages)}
-					size="small"
-					variant="ghost"
-				>
-					{totalPages}
-				</PaginationButton>,
-			);
-		}
+  const isAnySelected = selectedRows.length > 0;
 
-		// Next button
-		buttons.push(
-			<PaginationButton
-				key="next"
-				disabled={currentPage === totalPages}
-				onClick={() => setCurrentPage(currentPage + 1)}
-				size="small"
-				variant="ghost"
-			>
-				Next
-			</PaginationButton>,
-		);
+  const isRowSelected = (row: T) => selectedRows.includes(row);
 
-		return buttons;
-	}, [currentPage, totalPages, pagination]);
+  const paginationButtons = React.useMemo(() => {
+    if (!pagination || totalPages <= 1) return null;
 
-	// Calculate active filters count
-	const activeFiltersCount = Object.keys(filterState).length;
+    const buttons = [];
+    const maxButtonsToShow = 5;
 
-	return (
-		<TableContainer fullWidth={fullWidth} {...props}>
-			{/* Table controls */}
-			<TableControls>
-				<TableControlsLeft>
-					{searchable && (
-						<Input
-							placeholder={searchPlaceholder}
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							prefix={<Icon icon={RiSearchLine} size={16} />}
-							size="small"
-							clearable
-							onClearClick={() => setSearchQuery("")}
-						/>
-					)}
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
+    const endPage = Math.min(startPage + maxButtonsToShow - 1, totalPages);
 
-					<FilterButton
-						size="small"
-						variant="ghost"
-						onClick={() => setShowFilters(!showFilters)}
-						type={activeFiltersCount > 0 ? "primary" : "dark"}
-					>
-						<Icon icon={RiFilterLine} size={16} />
-						{activeFiltersCount > 0 && (
-							<FilterCount>
-								<Badge size="small" type="primary">
-									{activeFiltersCount}
-								</Badge>
-							</FilterCount>
-						)}
-					</FilterButton>
+    if (endPage - startPage + 1 < maxButtonsToShow) {
+      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
+    }
 
-					{activeFiltersCount > 0 && (
-						<ClearFiltersButton
-							size="small"
-							variant="ghost"
-							onClick={clearAllFilters}
-						>
-							Clear filters
-						</ClearFiltersButton>
-					)}
-				</TableControlsLeft>
+    buttons.push(
+      <PaginationButton
+        key="prev"
+        disabled={currentPage === 1}
+        onClick={() => setCurrentPage(currentPage - 1)}
+        size="small"
+        variant="ghost"
+      >
+        Prev
+      </PaginationButton>,
+    );
 
-				<TableControlsRight>
-					{selectedRows.length > 0 && (
-						<Badge size="small" type="primary">
-							{selectedRows.length} selected
-						</Badge>
-					)}
-				</TableControlsRight>
-			</TableControls>
+    if (startPage > 1) {
+      buttons.push(
+        <PaginationButton
+          key="1"
+          onClick={() => setCurrentPage(1)}
+          size="small"
+          variant="ghost"
+        >
+          1
+        </PaginationButton>,
+      );
 
-			{/* Filter panel */}
-			{showFilters && (
-				<FilterPanel>
-					<FilterPanelHeader>
-						<Text weight="semiBold">Filters</Text>
-						<CloseFilterButton
-							size="small"
-							variant="ghost"
-							onClick={() => setShowFilters(false)}
-						>
-							<Icon icon={RiCloseLine} size={16} />
-						</CloseFilterButton>
-					</FilterPanelHeader>
-					<FilterPanelContent>
-						{columns
-							.filter((column) => column.filterable !== false)
-							.map((column) => (
-								<FilterItem key={column.key}>
-									<FilterLabel>
-										<Text size="small">{column.header}</Text>
-									</FilterLabel>
-									<Input
-										size="small"
-										placeholder={`Filter by ${column.header}`}
-										value={filterState[column.key] || ""}
-										onChange={(e) =>
-											handleFilterChange(column.key, e.target.value)
-										}
-										clearable
-										onClearClick={() => clearFilter(column.key)}
-									/>
-								</FilterItem>
-							))}
-					</FilterPanelContent>
-				</FilterPanel>
-			)}
+      if (startPage > 2) {
+        buttons.push(
+          <PaginationEllipsis key="start-ellipsis">...</PaginationEllipsis>,
+        );
+      }
+    }
 
-			{/* Table */}
-			<TableWrapper>
-				<StyledTable dense={dense}>
-					<TableHead>
-						<TableRow header>
-							{selectable && (
-								<TableHeaderCell width="40px">
-									<Checkbox
-										checked={isAllSelected}
-										indeterminate={isAnySelected && !isAllSelected}
-										onChange={handleSelectAll}
-									/>
-								</TableHeaderCell>
-							)}
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <PaginationButton
+          key={i}
+          active={i === currentPage}
+          onClick={() => setCurrentPage(i)}
+          size="small"
+          variant={i === currentPage ? undefined : "ghost"}
+        >
+          {i}
+        </PaginationButton>,
+      );
+    }
 
-							{columns.map((column) => (
-								<TableHeaderCell
-									key={column.key}
-									sortable={column.sortable}
-									width={column.width}
-									align={column.align}
-									onClick={
-										column.sortable ? () => handleSort(column.key) : undefined
-									}
-									active={sortState.key === column.key}
-								>
-									<HeaderContent>
-										{column.header}
-										{column.sortable && (
-											<SortIndicator>
-												{sortState.key === column.key ? (
-													sortState.direction === "asc" ? (
-														<Icon icon={RiSortAsc} size={16} />
-													) : (
-														<Icon icon={RiSortDesc} size={16} />
-													)
-												) : (
-													<DefaultSortIndicator />
-												)}
-											</SortIndicator>
-										)}
-									</HeaderContent>
-								</TableHeaderCell>
-							))}
-						</TableRow>
-					</TableHead>
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        buttons.push(
+          <PaginationEllipsis key="end-ellipsis">...</PaginationEllipsis>,
+        );
+      }
 
-					<TableBody>
-						{loading ? (
-							<TableLoadingRow
-								colSpan={selectable ? columns.length + 1 : columns.length}
-							>
-								<Spinner size={24} />
-								<Text ml="small">Loading...</Text>
-							</TableLoadingRow>
-						) : paginatedData.length === 0 ? (
-							<TableEmptyRow
-								colSpan={selectable ? columns.length + 1 : columns.length}
-							>
-								<Text>{emptyMessage}</Text>
-							</TableEmptyRow>
-						) : (
-							paginatedData.map((row, rowIndex) => (
-								<TableRow
-									key={rowIndex}
-									className={rowClassName ? rowClassName(row, rowIndex) : ""}
-									selected={isRowSelected(row)}
-									onClick={selectable ? () => handleRowSelect(row) : undefined}
-									clickable={selectable}
-								>
-									{selectable && (
-										<TableCell>
-											<Checkbox
-												checked={isRowSelected(row)}
-												onChange={() => handleRowSelect(row)}
-											/>
-										</TableCell>
-									)}
+      buttons.push(
+        <PaginationButton
+          key={totalPages}
+          onClick={() => setCurrentPage(totalPages)}
+          size="small"
+          variant="ghost"
+        >
+          {totalPages}
+        </PaginationButton>,
+      );
+    }
 
-									{columns.map((column) => (
-										<TableCell
-											key={`${rowIndex}-${column.key}`}
-											align={column.align}
-											className={
-												cellClassName
-													? cellClassName(
-															row[column.key],
-															row,
-															column.key,
-															rowIndex,
-														)
-													: ""
-											}
-										>
-											{column.render
-												? column.render(row[column.key], row, rowIndex)
-												: row[column.key] != null
-													? String(row[column.key])
-													: "-"}
-										</TableCell>
-									))}
-								</TableRow>
-							))
-						)}
-					</TableBody>
-				</StyledTable>
-			</TableWrapper>
+    buttons.push(
+      <PaginationButton
+        key="next"
+        disabled={currentPage === totalPages}
+        onClick={() => setCurrentPage(currentPage + 1)}
+        size="small"
+        variant="ghost"
+      >
+        Next
+      </PaginationButton>,
+    );
 
-			{/* Pagination */}
-			{pagination && totalPages > 1 && (
-				<PaginationContainer>
-					<Text size="small">
-						Showing {(currentPage - 1) * itemsPerPage + 1}-
-						{Math.min(currentPage * itemsPerPage, sortedData.length)} of{" "}
-						{sortedData.length}
-					</Text>
-					<PaginationButtons>{paginationButtons}</PaginationButtons>
-				</PaginationContainer>
-			)}
-		</TableContainer>
-	);
+    return buttons;
+  }, [currentPage, totalPages, pagination]);
+
+  const activeFiltersCount = Object.keys(filterState).length;
+
+  return (
+    <TableContainer fullWidth={fullWidth} {...props}>
+      <TableControls>
+        <TableControlsLeft>
+          {searchable && (
+            <Input
+              placeholder={searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              prefix={<Icon icon={RiSearchLine} size={16} />}
+              size="small"
+              clearable
+              onClearClick={() => setSearchQuery("")}
+            />
+          )}
+
+          <FilterButton
+            size="small"
+            variant="ghost"
+            onClick={() => setShowFilters(!showFilters)}
+            type={activeFiltersCount > 0 ? "primary" : "dark"}
+          >
+            <Icon icon={RiFilterLine} size={16} />
+            {activeFiltersCount > 0 && (
+              <FilterCount>
+                <Badge size="small" type="primary">
+                  {activeFiltersCount}
+                </Badge>
+              </FilterCount>
+            )}
+          </FilterButton>
+
+          {activeFiltersCount > 0 && (
+            <ClearFiltersButton
+              size="small"
+              variant="ghost"
+              onClick={clearAllFilters}
+            >
+              Clear filters
+            </ClearFiltersButton>
+          )}
+        </TableControlsLeft>
+
+        <TableControlsRight>
+          {selectedRows.length > 0 && (
+            <Badge size="small" type="primary">
+              {selectedRows.length} selected
+            </Badge>
+          )}
+        </TableControlsRight>
+      </TableControls>
+
+      {showFilters && (
+        <FilterPanel>
+          <FilterPanelHeader>
+            <Text weight="semiBold">Filters</Text>
+
+            <CloseFilterButton
+              size="small"
+              variant="ghost"
+              onClick={() => setShowFilters(false)}
+            >
+              <Icon icon={RiCloseLine} size={16} />
+            </CloseFilterButton>
+          </FilterPanelHeader>
+
+          <FilterPanelContent>
+            {columns
+              .filter((column) => column.filterable !== false)
+              .map((column) => (
+                <FilterItem key={column.key}>
+                  <FilterLabel>
+                    <Text size="small">{column.header}</Text>
+                  </FilterLabel>
+
+                  <Input
+                    size="small"
+                    placeholder={`Filter by ${column.header}`}
+                    value={filterState[column.key] || ""}
+                    onChange={(e) =>
+                      handleFilterChange(column.key, e.target.value)
+                    }
+                    clearable
+                    onClearClick={() => clearFilter(column.key)}
+                  />
+                </FilterItem>
+              ))}
+          </FilterPanelContent>
+        </FilterPanel>
+      )}
+
+      <TableWrapper>
+        <StyledTable dense={dense}>
+          <TableHead>
+            <TableRow header>
+              {selectable && (
+                <TableHeaderCell width="40px">
+                  <Checkbox
+                    checked={isAllSelected}
+                    indeterminate={isAnySelected && !isAllSelected}
+                    onChange={handleSelectAll}
+                  />
+                </TableHeaderCell>
+              )}
+
+              {columns.map((column) => (
+                <TableHeaderCell
+                  key={column.key}
+                  sortable={column.sortable}
+                  width={column.width}
+                  align={column.align}
+                  onClick={
+                    column.sortable ? () => handleSort(column.key) : undefined
+                  }
+                  active={sortState.key === column.key}
+                >
+                  <HeaderContent>
+                    {column.header}
+                    {column.sortable && (
+                      <SortIndicator>
+                        {sortState.key === column.key ? (
+                          sortState.direction === "asc" ? (
+                            <Icon icon={RiSortAsc} size={16} />
+                          ) : (
+                            <Icon icon={RiSortDesc} size={16} />
+                          )
+                        ) : (
+                          <DefaultSortIndicator />
+                        )}
+                      </SortIndicator>
+                    )}
+                  </HeaderContent>
+                </TableHeaderCell>
+              ))}
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {loading ? (
+              <TableLoadingRow
+                // @ts-ignore
+                colSpan={selectable ? columns.length + 1 : columns.length}
+              >
+                <Spinner size={24} />
+                <Text ml="small">Loading...</Text>
+              </TableLoadingRow>
+            ) : paginatedData.length === 0 ? (
+              <TableEmptyRow
+                // @ts-ignore
+                colSpan={selectable ? columns.length + 1 : columns.length}
+              >
+                <Text>{emptyMessage}</Text>
+              </TableEmptyRow>
+            ) : (
+              paginatedData.map((row, rowIndex) => (
+                <TableRow
+                  // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                  key={rowIndex}
+                  className={rowClassName ? rowClassName(row, rowIndex) : ""}
+                  selected={isRowSelected(row)}
+                  onClick={selectable ? () => handleRowSelect(row) : undefined}
+                  clickable={selectable}
+                >
+                  {selectable && (
+                    <TableCell>
+                      <Checkbox
+                        checked={isRowSelected(row)}
+                        onChange={() => handleRowSelect(row)}
+                      />
+                    </TableCell>
+                  )}
+
+                  {columns.map((column) => (
+                    <TableCell
+                      key={`${rowIndex}-${column.key}`}
+                      align={column.align}
+                      className={
+                        cellClassName
+                          ? cellClassName(
+                              row[column.key],
+                              row,
+                              column.key,
+                              rowIndex,
+                            )
+                          : ""
+                      }
+                    >
+                      {column.render
+                        ? column.render(row[column.key], row, rowIndex)
+                        : row[column.key] != null
+                          ? String(row[column.key])
+                          : "-"}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </StyledTable>
+      </TableWrapper>
+
+      {pagination && totalPages > 1 && (
+        <PaginationContainer>
+          <Text size="small">
+            Showing {(currentPage - 1) * itemsPerPage + 1}-
+            {Math.min(currentPage * itemsPerPage, sortedData.length)} of{" "}
+            {sortedData.length}
+          </Text>
+          <PaginationButtons>{paginationButtons}</PaginationButtons>
+        </PaginationContainer>
+      )}
+    </TableContainer>
+  );
 };
 
-// Styled components
 const TableContainer = kitchn.div<{ fullWidth: boolean }>`
   display: flex;
   flex-direction: column;
@@ -760,26 +731,26 @@ const TableHead = kitchn.thead`
 const TableBody = kitchn.tbody``;
 
 const TableRow = kitchn.tr<{
-	header?: boolean;
-	selected?: boolean;
-	clickable?: boolean;
+  header?: boolean;
+  selected?: boolean;
+  clickable?: boolean;
 }>`
   &:not(:last-child) {
     border-bottom: 1px solid ${({ theme }) => theme.colors.layout.dark};
   }
   
   background-color: ${({ theme, selected }) =>
-		selected
-			? convertRGBToRGBA(theme.colors.accent.primary, 0.1)
-			: "transparent"};
+    selected
+      ? convertRGBToRGBA(theme.colors.accent.primary, 0.1)
+      : "transparent"};
   
   &:hover {
     background-color: ${({ theme, header, selected }) =>
-			header
-				? "transparent"
-				: selected
-					? convertRGBToRGBA(theme.colors.accent.primary, 0.15)
-					: theme.colors.layout.darker};
+      header
+        ? "transparent"
+        : selected
+          ? convertRGBToRGBA(theme.colors.accent.primary, 0.15)
+          : theme.colors.layout.darker};
   }
   
   cursor: ${({ clickable }) => (clickable ? "pointer" : "default")};
@@ -787,10 +758,10 @@ const TableRow = kitchn.tr<{
 `;
 
 const TableHeaderCell = kitchn.th<{
-	sortable?: boolean;
-	width?: string | number;
-	align?: "left" | "center" | "right";
-	active?: boolean;
+  sortable?: boolean;
+  width?: string | number;
+  align?: "left" | "center" | "right";
+  active?: boolean;
 }>`
   padding: 12px 16px;
   text-align: ${({ align }) => align || "left"};
@@ -802,8 +773,8 @@ const TableHeaderCell = kitchn.th<{
   
   &:hover {
     ${({ sortable, theme }) =>
-			sortable &&
-			`
+      sortable &&
+      `
       color: ${theme.colors.accent.primary};
     `}
   }
@@ -814,6 +785,7 @@ const TableCell = kitchn.td<{ align?: "left" | "center" | "right" }>`
   text-align: ${({ align }) => align || "left"};
   white-space: nowrap;
   color: ${({ theme }) => theme.colors.text.lighter};
+  align-content: center;
 `;
 
 const HeaderContent = kitchn.div`
@@ -869,8 +841,8 @@ const PaginationButton = kitchn(Button)<{ active?: boolean }>`
   margin: 0 2px;
   
   ${({ active, theme }) =>
-		active &&
-		`
+    active &&
+    `
     background-color: ${theme.colors.accent.primary};
     color: ${theme.colors.text.lightest};
     &:hover {
@@ -885,6 +857,8 @@ const PaginationEllipsis = kitchn.span`
   color: ${({ theme }) => theme.colors.text.light};
 `;
 
-DataTableComponent.displayName = "KitchnDataTable";
+DataTableComponent.displayName = "DataTable";
+
 export const DataTable = withDecorator(DataTableComponent);
+
 export default DataTable;

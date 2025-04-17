@@ -2,15 +2,8 @@
 
 import { Regions } from "@/constants/regions";
 import type { APIReponse } from "@/types/api-response";
-import type { RiotAccount } from "@/types/riot-account";
-import kitchn, {
-	Button,
-	Combobox,
-	Container,
-	Icon,
-	Input,
-	Select,
-} from "kitchn";
+import type { RiotAccountDto } from "@/types/dto/riot/riot-account.dto";
+import kitchn, { Button, Container, Icon, Input, Select } from "kitchn";
 import { Plus, X } from "lucide-react";
 import React from "react";
 
@@ -24,7 +17,9 @@ const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
 	>([]);
 	const [loading, setLoading] = React.useState<boolean>(false);
 	const [error, setError] = React.useState<string | null>(null);
-	const [summonerPuuid, setSummonerPuuid] = React.useState<string | null>(null);
+	const [riotAccount, setRiotAccount] = React.useState<RiotAccountDto | null>(
+		null,
+	);
 
 	const timer = React.useRef(null);
 
@@ -44,7 +39,7 @@ const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
 				const fetchResponse = await fetch(
 					`/api/search-summoner?term=${encodeURIComponent(currentValue)}&region=EUW`,
 				);
-				const response: APIReponse<RiotAccount> = await fetchResponse.json();
+				const response: APIReponse<RiotAccountDto> = await fetchResponse.json();
 
 				if (response.success === true) {
 					setFilteredOptions([
@@ -53,8 +48,8 @@ const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
 							value: response.data.puuid,
 						},
 					]);
+					setRiotAccount(response.data);
 					setError(null);
-					setSummonerPuuid(response.data.puuid);
 					setLoading(false);
 				} else {
 					setLoading(false);
@@ -65,6 +60,39 @@ const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
 		},
 		[filteredOptions],
 	);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	const handleSubmit = React.useCallback(() => {
+		if (!riotAccount) return;
+
+		setLoading(true);
+		setError(null);
+
+		fetch(`/api/${game}/ladder`, {
+			method: "POST",
+			body: JSON.stringify({
+				region: "EUW",
+				summonerName: `${riotAccount.gameName}#${riotAccount.tagLine}`,
+			}),
+			headers: {
+				"Content-Type": "application/json",
+			},
+		})
+			.then((res) => res.json())
+			.then((data) => {
+				if (data.success) {
+					setLoading(false);
+					setRiotAccount(null);
+				} else {
+					setLoading(false);
+					setError(data.error.message);
+				}
+			})
+			.catch((error) => {
+				setLoading(false);
+				setError(error.message);
+			});
+	}, [riotAccount]);
 
 	return (
 		<Container row gap={"small"}>
@@ -81,11 +109,8 @@ const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
 				/>
 			</SearchContainer>
 
-			<Select
-				placeholder="Région"
-				defaultValue={Regions.find((r) => r.id === "EUW")?.id}
-			>
-				{Regions.map((region) => (
+			<Select placeholder="Région" defaultValue={Regions.EUW.id}>
+				{Object.values(Regions).map((region) => (
 					<option key={region.id} value={region.id}>
 						{region.name}
 					</option>
@@ -95,7 +120,8 @@ const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
 			<Button
 				prefix={<Plus size={16} />}
 				loading={loading}
-				disabled={!summonerPuuid}
+				disabled={!riotAccount}
+				onClick={handleSubmit}
 			>
 				Ajouter au ladder
 			</Button>

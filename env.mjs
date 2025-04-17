@@ -7,12 +7,7 @@ export const env = createEnv({
     RG_API_KEY: z.string(),
     PORT: z.string().optional(),
 
-    DB_METHOD: z.enum(["mongodb", "mongodb+srv"]),
-    DB_USERNAME: z.string(),
-    DB_PASSWORD: z.string(),
-    DB_SERVER_URI: z.string(),
-    DB_NAME: z.string(),
-    DB_PARAMS: z.string().optional(),
+    DATABASE_URL: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.string().optional(),

@@ -1,6 +1,11 @@
+export type RegionId = "EUW";
+
 export type Region = {
-  id: string;
-  name: string;
-  domain: string;
-  available: boolean;
+	id: RegionId;
+	name: string;
+	routing: {
+		platform: string;
+		regional: string;
+	};
+	available: boolean;
 };

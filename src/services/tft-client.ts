@@ -1,368 +1,304 @@
-import type { RiotAccount } from "@/types/riot-account";
+import type { RiotAccountDto } from "@/types/dto/riot/riot-account.dto";
 import { env } from "../../env.mjs";
-
-// Type definitions for API responses
-export interface SummonerDTO {
-	id: string;
-	accountId: string;
-	puuid: string;
-	name: string;
-	profileIconId: number;
-	revisionDate: number;
-	summonerLevel: number;
-}
-
-export interface LeagueEntryDTO {
-	leagueId: string;
-	summonerId: string;
-	summonerName: string;
-	queueType: string;
-	tier: string;
-	rank: string;
-	leaguePoints: number;
-	wins: number;
-	losses: number;
-	hotStreak: boolean;
-	veteran: boolean;
-	freshBlood: boolean;
-	inactive: boolean;
-}
-
-export interface SummonerData {
-	summonerName: string;
-	summonerId: string;
-	level: number;
-	region: string;
-	ranked: boolean;
-	tier: string;
-	division: string;
-	leaguePoints: number;
-	wins: number;
-	losses: number;
-	winRate: number;
-	hotStreak: boolean;
-	tierSort: number;
-	divisionSort: number;
-}
-
-export type Region =
-	| "BR"
-	| "EUNE"
-	| "EUW"
-	| "JP"
-	| "KR"
-	| "LAN"
-	| "LAS"
-	| "NA"
-	| "OCE"
-	| "TR"
-	| "RU";
+import {
+  QueueType,
+  type RankedDivision,
+  type RankedTier,
+  type Summoner,
+} from "@/types/summoner";
+import type { RegionId } from "@/types/region";
+import { Regions } from "@/constants/regions";
+import type { RiotSummonerDto } from "@/types/dto/riot/riot-summoner.dto";
+import type { RiotLeagueEntryDto } from "@/types/dto/riot/riot-league-entry.dto";
 
 /**
  * TFT API Client for interacting with the Riot Games API
  */
 export class TftApiClient {
-	private apiKey: string;
+  private apiKey: string;
 
-	// Available regions for TFT
-	private regions: Record<string, string> = {
-		BR: "br1.api.riotgames.com",
-		EUNE: "eun1.api.riotgames.com",
-		EUW: "euw1.api.riotgames.com",
-		JP: "jp1.api.riotgames.com",
-		KR: "kr.api.riotgames.com",
-		LAN: "la1.api.riotgames.com",
-		LAS: "la2.api.riotgames.com",
-		NA: "na1.api.riotgames.com",
-		OCE: "oc1.api.riotgames.com",
-		TR: "tr1.api.riotgames.com",
-		RU: "ru.api.riotgames.com",
-	};
+  // Rank tiers for sorting
+  private tierValues: Record<RankedTier, number> = {
+    IRON: 1,
+    BRONZE: 2,
+    SILVER: 3,
+    GOLD: 4,
+    PLATINUM: 5,
+    EMERALD: 6,
+    DIAMOND: 7,
+    MASTER: 8,
+    GRANDMASTER: 9,
+    CHALLENGER: 10,
+  };
 
-	// Regional routing values for TFT ranked data
-	private regionalRoutes: Record<string, string> = {
-		BR: "americas",
-		EUNE: "europe",
-		EUW: "europe",
-		JP: "asia",
-		KR: "asia",
-		LAN: "americas",
-		LAS: "americas",
-		NA: "americas",
-		OCE: "sea",
-		TR: "europe",
-		RU: "europe",
-	};
+  // Division values for sorting
+  private divisionValues: Record<RankedDivision, number> = {
+    I: 4,
+    II: 3,
+    III: 2,
+    IV: 1,
+  };
 
-	// Rank tiers for sorting
-	private tierValues: Record<string, number> = {
-		IRON: 1,
-		BRONZE: 2,
-		SILVER: 3,
-		GOLD: 4,
-		PLATINUM: 5,
-		DIAMOND: 6,
-		MASTER: 7,
-		GRANDMASTER: 8,
-		CHALLENGER: 9,
-	};
+  /**
+   * Create a new TFT API client
+   * @param apiKey Your Riot Games API key
+   */
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
 
-	// Division values for sorting
-	private divisionValues: Record<string, number> = {
-		I: 4,
-		II: 3,
-		III: 2,
-		IV: 1,
-	};
+  /**
+   * Update the API key
+   * @param newApiKey New Riot Games API key
+   */
+  public setApiKey(newApiKey: string): void {
+    this.apiKey = newApiKey;
+  }
 
-	/**
-	 * Create a new TFT API client
-	 * @param apiKey Your Riot Games API key
-	 */
-	constructor(apiKey: string) {
-		this.apiKey = apiKey;
-	}
+  /**
+   * Helper method to make API requests
+   * @param url API endpoint URL
+   * @returns Promise with JSON response
+   */
+  private async makeRequest<T>(path: URL | string, host: string): Promise<T> {
+    if (!this.apiKey) {
+      throw new Error("API key is not set");
+    }
 
-	/**
-	 * Update the API key
-	 * @param newApiKey New Riot Games API key
-	 */
-	public setApiKey(newApiKey: string): void {
-		this.apiKey = newApiKey;
-	}
+    const url = new URL(path, `https://${host}`);
 
-	/**
-	 * Helper method to make API requests
-	 * @param url API endpoint URL
-	 * @returns Promise with JSON response
-	 */
-	private async makeRequest<T>(url: URL): Promise<T> {
-		if (!this.apiKey) {
-			throw new Error("API key is not set");
-		}
-		if (!url) {
-			throw new Error("URL is required");
-		}
+    // Set up request
+    const headers = {
+      "Content-Type": "application/json",
+      "X-Riot-Token": this.apiKey,
+    };
 
-		// Set up request
-		const headers = {
-			"Content-Type": "application/json",
-			"X-Riot-Token": this.apiKey,
-		};
+    const options: RequestInit = {
+      method: "GET",
+      headers: headers,
+      redirect: "follow",
+    };
 
-		const options: RequestInit = {
-			method: "GET",
-			headers: headers,
-			redirect: "follow",
-		};
+    // Make the request
+    const response = await fetch(url.toString(), options);
 
-		// Make the request
-		const response = await fetch(url.toString(), options);
+    if (!response.ok) {
+      throw new Error(
+        `API request failed: ${response.status} ${response.statusText}`,
+      );
+    }
 
-		if (!response.ok) {
-			throw new Error(
-				`API request failed: ${response.status} ${response.statusText}`,
-			);
-		}
+    return (await response.json()) as T;
+  }
 
-		return (await response.json()) as T;
-	}
+  /**
+   * Get region host
+   * @param region Region code
+   * @returns Region-specific host
+   */
+  private getPlatformHost(regionId: RegionId): string {
+    if (!Regions[regionId]) {
+      throw new Error(`Invalid region: ${regionId}`);
+    }
 
-	/**
-	 * Get region host
-	 * @param region Region code
-	 * @returns Region-specific host
-	 */
-	private getRegionHost(region: Region): string {
-		if (!this.regions[region]) {
-			throw new Error(`Invalid region: ${region}`);
-		}
-		return this.regions[region];
-	}
+    return Regions[regionId].routing.platform;
+  }
 
-	/**
-	 * Get regional route
-	 * @param region Region code
-	 * @returns Regional route
-	 */
-	private getRegionalRoute(region: Region): string {
-		if (!this.regionalRoutes[region]) {
-			throw new Error(`Invalid region: ${region}`);
-		}
-		return this.regionalRoutes[region];
-	}
+  /**
+   * Get regional host
+   * @param region Region code
+   * @returns Regional route
+   */
+  private getRegionalHost(region: RegionId): string {
+    if (!Regions[region]) {
+      throw new Error(`Invalid region: ${region}`);
+    }
 
-	/**
-	 * Get tier sort value
-	 * @param tier Rank tier string
-	 * @returns Numeric sort value
-	 */
-	private getTierValue(tier: string): number {
-		return this.tierValues[tier] || 0;
-	}
+    return Regions[region].routing.regional;
+  }
 
-	/**
-	 * Get division sort value
-	 * @param division Rank division string
-	 * @returns Numeric sort value
-	 */
-	private getDivisionValue(division: string): number {
-		return this.divisionValues[division] || 0;
-	}
+  private getQueueType(queueType: string): QueueType {
+    switch (queueType) {
+      case "RANKED_TFT":
+        return QueueType.RankedTft;
+      case "RANKED_TFT_DOUBLE_UP":
+        return QueueType.RankedTftDoubleUp;
+      case "RANKED_SOLO_5x5":
+        return QueueType.RankedSolo;
+      case "RANKED_TEAM_5x5":
+        return QueueType.RankedFlex;
+      default:
+        throw new Error(`Unknown queue type: ${queueType}`);
+    }
+  }
 
-	/**
-	 * Calculate win rate percentage
-	 * @param wins Number of wins
-	 * @param losses Number of losses
-	 * @returns Win rate as a percentage
-	 */
-	private calculateWinRate(wins: number, losses: number): number {
-		const totalGames = wins + losses;
-		return totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
-	}
+  /**
+   * Get tier sort value
+   * @param tier Rank tier string
+   * @returns Numeric sort value
+   */
+  getTierValue(tier: string): number {
+    return this.tierValues[tier] || 0;
+  }
 
-	/**
-	 * Gets RG summoner data by name
-	 *
-	 * @param summonerName Summoner name to look up
-	 * @param region Region code
-	 * @returns Promise with summoner data
-	 */
-	public async getSummonerByName(
-		summonerName: string,
-		region: Region,
-	): Promise<RiotAccount> {
-		const url = new URL(
-			`https://${this.getRegionalRoute(region)}.api.riotgames.com/riot/account/v1/accounts/by-riot-id`,
-		);
+  /**
+   * Get division sort value
+   * @param division Rank division string
+   * @returns Numeric sort value
+   */
+  getDivisionValue(division: string): number {
+    return this.divisionValues[division] || 0;
+  }
 
-		const splitedName = summonerName.split("#");
+  /**
+   * Calculate win rate percentage
+   * @param wins Number of wins
+   * @param losses Number of losses
+   * @returns Win rate as a percentage
+   */
+  calculateWinRate(wins: number, losses: number): number {
+    const totalGames = wins + losses;
+    return totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+  }
 
-		const gameName = splitedName[0];
-		const tagLine = splitedName[1];
+  /**
+   * Gets RG account data by name
+   *
+   * @param summonerName Summoner name to look up
+   * @param region Region code
+   * @returns Promise with account data
+   */
+  async getAccountByName(
+    summonerName: string,
+    regionId: RegionId,
+  ): Promise<RiotAccountDto> {
+    let url = "/riot/account/v1/accounts/by-riot-id";
 
-		if (!gameName || !tagLine) {
-			throw new Error("Invalid summoner name format. Expected 'name#tag'.");
-		}
+    const splitedName = summonerName.split("#");
 
-		url.pathname += `/${gameName}/${tagLine}`;
+    const gameName = splitedName[0];
+    const tagLine = splitedName[1];
 
-		return this.makeRequest<RiotAccount>(url);
-	}
+    if (!gameName || !tagLine) {
+      throw new Error("Invalid summoner name format. Expected 'name#tag'.");
+    }
 
-	/**
-	 * Gets TFT summoner LP and other ranked data for a specific summoner
-	 * @param summonerName Summoner name to look up
-	 * @param region Region code
-	 * @returns Promise with summoner data or error
-	 */
-	public async getTFTSummonerData(
-		summonerName: string,
-		region: Region,
-	): Promise<ApiResponse> {
-		try {
-			// Get summoner data by name
-			const summonerData = await this.getSummonerByName(summonerName, region);
+    url += `/${gameName}/${tagLine}`;
 
-			// Get ranked data using summoner ID
-			const rankedData = await this.getRankedEntries(summonerData.id, region);
+    return this.makeRequest<RiotAccountDto>(
+      url,
+      this.getRegionalHost(regionId),
+    );
+  }
 
-			// Format results
-			if (rankedData.length === 0) {
-				return {
-					status: "success",
-					data: {
-						summonerName: summonerData.name,
-						summonerId: summonerData.id,
-						level: summonerData.summonerLevel,
-						region: region,
-						ranked: false,
-						tier: "UNRANKED",
-						division: "",
-						leaguePoints: 0,
-						wins: 0,
-						losses: 0,
-						winRate: 0,
-						hotStreak: false,
-						tierSort: 0,
-						divisionSort: 0,
-					},
-				};
-			}
+  /**
+   * Gets summoner data by puuid
+   *
+   * @param summonerPuuid Summoner PUUID to look up
+   * @param regionId Region code
+   * @returns Promise with summoner data
+   */
+  async getSummonerByPuuid(
+    summonerPuuid: string,
+    regionId: RegionId,
+  ): Promise<RiotSummonerDto> {
+    const url = `/lol/summoner/v4/summoners/by-puuid/${summonerPuuid}`;
 
-			// Find TFT ranked data
-			const tftRankedData = rankedData.find(
-				(queue) => queue.queueType === "RANKED_TFT",
-			);
+    return this.makeRequest<RiotSummonerDto>(
+      url,
+      this.getPlatformHost(regionId),
+    );
+  }
 
-			if (!tftRankedData) {
-				return {
-					status: "success",
-					data: {
-						summonerName: summonerData.name,
-						summonerId: summonerData.id,
-						level: summonerData.summonerLevel,
-						region: region,
-						ranked: false,
-						tier: "UNRANKED",
-						division: "",
-						leaguePoints: 0,
-						wins: 0,
-						losses: 0,
-						winRate: 0,
-						hotStreak: false,
-						tierSort: 0,
-						divisionSort: 0,
-					},
-				};
-			}
+  /**
+   * Gets ranked entries for a summoner by ID
+   *
+   * @param summonerId Summoner ID to look up
+   * @param region Region code
+   * @returns Promise with ranked entries
+   */
+  async getRankedEntries(
+    summonerId: string,
+    region: RegionId,
+    game: "lol" | "tft" = "tft",
+  ): Promise<RiotLeagueEntryDto[]> {
+    const url =
+      game === "tft"
+        ? `/tft/league/v1/entries/by-summoner/${summonerId}`
+        : `/lol/league/v4/entries/by-summoner/${summonerId}`;
 
-			// Calculate tier and division sort values
-			const tierValue = this.getTierValue(tftRankedData.tier);
-			const divisionValue = this.getDivisionValue(tftRankedData.rank);
+    return this.makeRequest<RiotLeagueEntryDto[]>(
+      url,
+      this.getPlatformHost(region),
+    );
+  }
 
-			// Calculate win rate
-			const winRate = this.calculateWinRate(
-				tftRankedData.wins,
-				tftRankedData.losses,
-			);
+  /**
+   * Gets summoner data by name
+   *
+   * @param summonerName Summoner name to look up
+   * @param region Region code
+   * @returns Promise with summoner data
+   */
+  async getSummonerDataByName(
+    summonerName: string,
+    region: RegionId,
+  ): Promise<Summoner> {
+    // Get account data
+    const accountData = await this.getAccountByName(summonerName, region);
 
-			return {
-				status: "success",
-				data: {
-					summonerName: summonerData.name,
-					summonerId: summonerData.id,
-					level: summonerData.summonerLevel,
-					region: region,
-					ranked: true,
-					tier: tftRankedData.tier,
-					division: tftRankedData.rank,
-					leaguePoints: tftRankedData.leaguePoints,
-					wins: tftRankedData.wins,
-					losses: tftRankedData.losses,
-					winRate: winRate,
-					hotStreak: tftRankedData.hotStreak,
-					tierSort: tierValue,
-					divisionSort: divisionValue,
-				},
-			};
-		} catch (error) {
-			console.error("Error fetching summoner data:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Unknown error",
-			};
-		}
-	}
+    if (!accountData) {
+      throw new Error("Account not found");
+    }
 
-	/**
-	 * Get recent match history for a summoner
-	 * @param summonerName Summoner name
-	 * @param region Region code
-	 * @param count Number of matches to retrieve
-	 * @returns Promise with match data
-	 */
-	public async getRecentMatches(
+    // - Get summoner data
+    const summonerData = await this.getSummonerByPuuid(
+      accountData.puuid,
+      region,
+    );
+
+    if (!summonerData) {
+      throw new Error("Summoner not found");
+    }
+
+    // Get ranked entries
+    const rankedEntries = await this.getRankedEntries(summonerData.id, region);
+
+    if (!rankedEntries) {
+      throw new Error("Ranked entries not found");
+    }
+
+    // Create the final summoner object
+    const summoner: Summoner = {
+      name: `${accountData.gameName}#${accountData.tagLine}`,
+      puuid: summonerData.puuid,
+      summonerId: summonerData.id,
+      accountId: summonerData.accountId,
+      profileIconId: summonerData.profileIconId,
+      level: summonerData.summonerLevel,
+      region,
+      leagues: rankedEntries.map((entry) => ({
+        leagueId: entry.leagueId,
+        leaguePoints: entry.leaguePoints,
+        losses: entry.losses,
+        wins: entry.wins,
+        queueType: this.getQueueType(entry.queueType),
+        tier: entry.tier as RankedTier,
+        rank: entry.rank as RankedDivision,
+      })),
+    };
+
+    return summoner;
+  }
+
+  /**
+   * Get recent match history for a summoner
+   * @param summonerName Summoner name
+   * @param region Region code
+   * @param count Number of matches to retrieve
+   * @returns Promise with match data
+   */
+  /* public async getRecentMatches(
 		summonerName: string,
 		region: Region,
 		count = 10,
@@ -421,55 +357,7 @@ export class TftApiClient {
 				message: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
-	}
-
-	/**
-	 * Create a leaderboard of multiple summoners
-	 * @param summonerList Array of {name, region} objects
-	 * @returns Promise with leaderboard data
-	 */
-	public async createLeaderboard(
-		summonerList: Array<{ name: string; region: Region }>,
-	): Promise<ApiResponse> {
-		try {
-			if (summonerList.length === 0) {
-				return {
-					status: "error",
-					message: "Empty summoner list",
-				};
-			}
-
-			// Fetch data for all summoners
-			const summonerPromises = summonerList.map((summoner) =>
-				this.getTFTSummonerData(summoner.name, summoner.region),
-			);
-
-			const results = await Promise.all(summonerPromises);
-
-			// Filter successful results and extract data
-			const leaderboardData = results
-				.filter((result) => result.status === "success" && result.data)
-				.map((result) => result.data);
-
-			if (leaderboardData.length === 0) {
-				return {
-					status: "error",
-					message: "Could not fetch data for any summoners",
-				};
-			}
-
-			return {
-				status: "success",
-				matches: leaderboardData,
-			};
-		} catch (error) {
-			console.error("Error creating leaderboard:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Unknown error",
-			};
-		}
-	}
+	} */
 }
 
 export const tftClient = new TftApiClient(env.RG_API_KEY);

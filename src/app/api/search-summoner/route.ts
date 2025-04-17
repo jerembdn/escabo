@@ -1,11 +1,9 @@
-import Summoner from "@/models/summoner";
-import dbConnect from "@/services/mongoose";
 import { tftClient } from "@/services/tft-client";
 import type { APIReponse } from "@/types/api-response";
-import type { RiotAccount } from "@/types/riot-account";
+import type { RiotAccountDto } from "@/types/dto/riot/riot-account.dto";
 import type { NextRequest, NextResponse } from "next/server";
 
-type ResponseData = APIReponse<RiotAccount>;
+type ResponseData = APIReponse<RiotAccountDto>;
 
 export async function GET(req: NextRequest, res: NextResponse<ResponseData>) {
 	const { searchParams } = new URL(req.url);
@@ -28,30 +26,29 @@ export async function GET(req: NextRequest, res: NextResponse<ResponseData>) {
 	}
 
 	try {
-		await dbConnect();
+		const summoner = await tftClient.getSummonerDataByName(searchTerm, "EUW");
 
-		let summoner = await Summoner.findOne({
-			summonerName: searchTerm,
-		});
-
-		if (summoner) {
-			return Response.json({
-				success: true,
-				data: summoner,
-			});
+		if (!summoner) {
+			return Response.json(
+				{
+					success: false,
+					error: {
+						message: "Summoner not found",
+					},
+				},
+				{
+					status: 404,
+				},
+			);
 		}
-
-		const response = await tftClient.getSummonerByName(
-			decodeURIComponent(searchTerm),
-			"EUW",
-		);
-
-		summoner = new Summoner({});
-		await summoner.save();
 
 		return Response.json({
 			success: true,
-			data: response,
+			data: {
+				gameName: summoner.name.split("#")[0],
+				tagLine: summoner.name.split("#")[1],
+				puuid: summoner.puuid,
+			} satisfies RiotAccountDto,
 		});
 	} catch (error) {
 		return Response.json(

@@ -1,4 +1,4 @@
-export type RiotAccount = {
+export type RiotAccountDto = {
 	puuid: string;
 	gameName: string;
 	tagLine: string;

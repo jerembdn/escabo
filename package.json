@@ -1,27 +1,33 @@
 {
-  "name": "next-app",
-  "private": true,
+  "name": "escabo",
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix"
+    "lint": "biome lint",
+    "lint:fix": "biome lint --fix",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:deploy": "prisma deploy",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:reset": "prisma migrate reset",
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
     "@icons-pack/react-simple-icons": "^12.6.0",
+    "@prisma/client": "^6.6.0",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@vercel/og": "^0.6.8",
     "@vercel/speed-insights": "^1.2.0",
     "kitchn": "latest",
     "lucide-react": "^0.488.0",
-    "mongoose": "^8.13.2",
     "next": "^14.0.0",
     "react": "^18.1.0",
     "react-dom": "^18.1.0",
     "react-hook-form": "^7.55.0",
     "react-wrap-balancer": "^1.1.1",
+    "swr": "^2.3.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -29,6 +35,7 @@
     "@types/node": "^22.14.1",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "prisma": "^6.6.0",
     "typescript": "^5.0.4"
   },
   "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"

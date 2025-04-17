@@ -10,7 +10,10 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => (
 const Wrapper = kitchn.main`
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   max-width: 1200px;
+  height: 100%;
+  min-height: 100vh;
   width: 100%;
   margin: 0 auto;
 `;

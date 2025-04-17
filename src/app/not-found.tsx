@@ -1,5 +1,4 @@
 import { Container, Link, Text } from "kitchn";
-import { Centered } from "./components";
 
 export default function NotFound() {
 	return (

@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum QueueType {
+  // TFT
+  RANKED_TFT
+  RANKED_TFT_DOUBLE_UP
+
+  // LOL
+  RANKED_SOLO_5x5
+  RANKED_TEAM_5x5
+}
+
+enum RankedTier {
+  IRON
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+  EMERALD
+  MASTER
+  GRANDMASTER
+  CHALLENGER
+}
+
+enum RankedDivision {
+  I
+  II
+  III
+  IV
+}
+
+enum RegionId {
+  EUW
+}
+
+model SummonerLeague {
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  leagueId     String
+  queueType    QueueType
+  tier         RankedTier
+  rank         RankedDivision?
+  wins         Int
+  losses       Int
+  leaguePoints Int
+
+  // Relation to Summoner
+  summoner   Summoner @relation(fields: [summonerId], references: [id])
+  summonerId String   @db.ObjectId
+
+  @@unique([summonerId, queueType])
+}
+
+model Summoner {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  puuid         String   @unique
+  summonerId    String   @unique
+  accountId     String   @unique
+  profileIconId Int
+  level         Int
+  region        RegionId
+
+  // Relation to SummonerLeague
+  leagues SummonerLeague[]
+
+  @@index([name])
+}
