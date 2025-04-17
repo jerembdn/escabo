@@ -18,6 +18,7 @@
     "@icons-pack/react-simple-icons": "^12.6.0",
     "@prisma/client": "^6.6.0",
     "@t3-oss/env-nextjs": "^0.12.0",
+    "@vercel/analytics": "^1.5.0",
     "@vercel/og": "^0.6.8",
     "@vercel/speed-insights": "^1.2.0",
     "kitchn": "latest",
