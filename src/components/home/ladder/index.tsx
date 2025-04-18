@@ -1,44 +1,92 @@
 "use client";
 
-import { Container, Switch, Text } from "kitchn";
+import { Container, Switch, Tabs, Text } from "kitchn";
 import React from "react";
 import AddPlayer from "./add-player";
 import LadderTable from "./table";
 import useSWR from "swr";
 import type { APIReponse } from "@/types/api-response";
-import type { Summoner } from "@/types/summoner";
+import { QueueType, type Summoner } from "@/types/summoner";
+import { useRouter } from "next/navigation";
 
-const Ladder: React.FC = () => {
-	const [selected, setSelected] = React.useState<"tft" | "lol">("tft");
-	const { data, error, isLoading } = useSWR(
-		`/api/${selected}/ladder`,
-		(resource, init) =>
-			fetch(resource, init)
-				.then((res) => res.json())
-				.then((res: APIReponse<Summoner[]>) => res.success && res.data),
-		{ refreshInterval: 1000 * 60 * 2 },
-	);
+type LadderProps = {
+  game: "tft" | "lol";
+  queueType: QueueType;
+};
 
-	const tabs = [
-		{ title: "Teamfight Tactics", value: "tft" },
-		{ title: "League of Legends", value: "lol", disabled: true },
-	];
+const Ladder: React.FC<LadderProps> = ({ game, queueType }) => {
+  const router = useRouter();
 
-	return (
-		<Container gap={"large"}>
-			<Switch tabs={tabs} selected={selected} setSelected={setSelected} />
+  /* const [selectedGame, setSelectedGame] = React.useState<"tft" | "lol">(game);
+  const [selectedQueueType, setSelectedQueueType] =
+    React.useState<QueueType>(queueType); */
 
-			<AddPlayer game={selected} />
+  const { data, error, isLoading } = useSWR(
+    `/api/${game}/ladder?queueType=${queueType}`,
+    (resource, init) =>
+      fetch(resource, init)
+        .then((res) => res.json())
+        .then((res: APIReponse<Summoner[]>) => res.success && res.data),
+    { refreshInterval: 1000 * 60 * 2 },
+  );
 
-			<Container gap={"small"}>
-				<Text size={"title"} weight={"bold"}>
-					Classement général
-				</Text>
+  /* React.useEffect(() => {
+    setSelectedQueueType(
+      game === "tft" ? QueueType.RankedTft : QueueType.RankedSolo,
+    );
+  }, [game]); */
 
-				<LadderTable summoners={data} loading={isLoading} />
-			</Container>
-		</Container>
-	);
+  const switchTabs = [
+    { title: "Teamfight Tactics", value: "tft" },
+    { title: "League of Legends", value: "lol" },
+  ];
+
+  const queueTypeTabs =
+    game === "tft"
+      ? [
+          { title: "Ranked", value: QueueType.RankedTft },
+          { title: "Double Up", value: QueueType.RankedTftDoubleUp },
+        ]
+      : [
+          { title: "Solo/Duo", value: QueueType.RankedSolo },
+          { title: "Flex", value: QueueType.RankedFlex },
+        ];
+
+  return (
+    <Container gap={"large"} marginTop={"large"}>
+      <Switch
+        tabs={switchTabs}
+        selected={game}
+        setSelected={(selectedGame) =>
+          router.push(`/ladder/${selectedGame}/${queueType.toLowerCase()}`)
+        }
+      />
+
+      <AddPlayer game={game} />
+
+      <Container gap={"small"}>
+        <Text size={"title"} weight={"bold"}>
+          Classement général
+        </Text>
+
+        <Tabs
+          tabs={queueTypeTabs}
+          selected={queueType}
+          setSelected={(selectedQueueType) =>
+            router.push(
+              `/ladder/${game}/${selectedQueueType.toString().toLowerCase()}`,
+            )
+          }
+        />
+
+        <LadderTable
+          summoners={data}
+          queueType={queueType}
+          loading={isLoading}
+        />
+      </Container>
+    </Container>
+  );
 };
 
 export default Ladder;

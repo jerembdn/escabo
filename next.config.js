@@ -6,6 +6,20 @@ const config = {
   env: {
       NEXT_PUBLIC_NODE_ENV: process.env.NODE_ENV,
   },
+  redirects: async () => {
+    return [
+      {
+        source: '/',
+        destination: '/ladder/tft/ranked_tft',
+        permanent: true,
+      },
+      {
+        source: '/ladder',
+        destination: '/ladder/tft/ranked_tft',
+        permanent: true,
+      },
+    ];
+  }
 };
 
 module.exports = withKitchnConfig(config);

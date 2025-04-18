@@ -1,48 +1,48 @@
 import type { RegionId } from "./region";
 
 export enum QueueType {
-	// - TFT
-	RankedTft = "RANKED_TFT",
-	RankedTftDoubleUp = "RANKED_TFT_DOUBLE_UP",
+  // - TFT
+  RankedTft = "RANKED_TFT",
+  RankedTftDoubleUp = "RANKED_TFT_DOUBLE_UP",
 
-	// - LOL
-	RankedSolo = "RANKED_SOLO_5x5",
-	RankedFlex = "RANKED_TEAM_5x5",
+  // - LOL
+  RankedSolo = "RANKED_SOLO_5x5",
+  RankedFlex = "RANKED_FLEX_SR",
 }
 
 export type RankedTier =
-	| "IRON"
-	| "BRONZE"
-	| "SILVER"
-	| "GOLD"
-	| "PLATINUM"
-	| "DIAMOND"
-	| "EMERALD"
-	| "MASTER"
-	| "GRANDMASTER"
-	| "CHALLENGER";
+  | "IRON"
+  | "BRONZE"
+  | "SILVER"
+  | "GOLD"
+  | "PLATINUM"
+  | "DIAMOND"
+  | "EMERALD"
+  | "MASTER"
+  | "GRANDMASTER"
+  | "CHALLENGER";
 
 export type RankedDivision = "I" | "II" | "III" | "IV";
 
 export type SummonerLeague = {
-	leagueId: string;
-	queueType: QueueType;
-	tier: RankedTier;
-	rank?: RankedDivision;
-	wins: number;
-	losses: number;
-	leaguePoints: number;
+  leagueId: string;
+  queueType: QueueType;
+  tier: RankedTier;
+  rank?: RankedDivision;
+  wins: number;
+  losses: number;
+  leaguePoints: number;
 };
 
 export type Summoner = {
-	name: string;
-	puuid: string;
-	summonerId: string;
-	accountId: string;
-	profileIconId: number;
-	level: number;
-	region: RegionId;
-	leagues: SummonerLeague[];
+  name: string;
+  puuid: string;
+  summonerId: string;
+  accountId: string;
+  profileIconId: number;
+  level: number;
+  region: RegionId;
+  leagues: SummonerLeague[];
 };
 
 /**

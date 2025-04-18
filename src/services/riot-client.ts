@@ -12,9 +12,9 @@ import type { RiotSummonerDto } from "@/types/dto/riot/riot-summoner.dto";
 import type { RiotLeagueEntryDto } from "@/types/dto/riot/riot-league-entry.dto";
 
 /**
- * TFT API Client for interacting with the Riot Games API
+ * Riot API Client for interacting with the Riot Games API
  */
-export class TftApiClient {
+export class RiotApiClient {
   private apiKey: string;
 
   // Rank tiers for sorting
@@ -125,7 +125,7 @@ export class TftApiClient {
         return QueueType.RankedTftDoubleUp;
       case "RANKED_SOLO_5x5":
         return QueueType.RankedSolo;
-      case "RANKED_TEAM_5x5":
+      case "RANKED_FLEX_SR":
         return QueueType.RankedFlex;
       default:
         throw new Error(`Unknown queue type: ${queueType}`);
@@ -172,18 +172,13 @@ export class TftApiClient {
     summonerName: string,
     regionId: RegionId,
   ): Promise<RiotAccountDto> {
-    let url = "/riot/account/v1/accounts/by-riot-id";
-
-    const splitedName = summonerName.split("#");
-
-    const gameName = splitedName[0];
-    const tagLine = splitedName[1];
+    const [gameName, tagLine] = summonerName.split("#");
 
     if (!gameName || !tagLine) {
       throw new Error("Invalid summoner name format. Expected 'name#tag'.");
     }
 
-    url += `/${gameName}/${tagLine}`;
+    const url = `/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`;
 
     return this.makeRequest<RiotAccountDto>(
       url,
@@ -262,7 +257,10 @@ export class TftApiClient {
     }
 
     // Get ranked entries
-    const rankedEntries = await this.getRankedEntries(summonerData.id, region);
+    const rankedEntries = await Promise.all([
+      ...(await this.getRankedEntries(summonerData.id, region, "lol")),
+      ...(await this.getRankedEntries(summonerData.id, region, "tft")),
+    ]);
 
     if (!rankedEntries) {
       throw new Error("Ranked entries not found");
@@ -360,4 +358,4 @@ export class TftApiClient {
 	} */
 }
 
-export const tftClient = new TftApiClient(env.RG_API_KEY);
+export const riotClient = new RiotApiClient(env.RG_API_KEY);

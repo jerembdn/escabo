@@ -1,6 +1,6 @@
 import DataTable from "@/components/data-table";
 import type { DataTableColumn } from "@/types/table";
-import type { Summoner } from "@/types/summoner";
+import type { QueueType, Summoner } from "@/types/summoner";
 import { displayRank } from "@/utils/display-rank";
 import {
   type AccentColors,
@@ -13,11 +13,13 @@ import {
 
 type LadderTableProps = {
   summoners?: Summoner[];
+  queueType: QueueType;
   loading: boolean;
 };
 
 const LadderTable: React.FC<LadderTableProps> = ({
   summoners,
+  queueType,
   loading,
 }: LadderTableProps) => {
   const columns: DataTableColumn<Summoner>[] = [
@@ -97,7 +99,7 @@ const LadderTable: React.FC<LadderTableProps> = ({
     : summoners
         .map((summoner) => {
           const league = summoner.leagues.find(
-            (league) => league.queueType === "RANKED_TFT",
+            (league) => league.queueType === queueType,
           );
           if (!league) return null;
 
