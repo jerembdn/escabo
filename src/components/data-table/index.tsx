@@ -54,6 +54,11 @@ type Props<T = undefined> = {
   selectable?: boolean;
 
   /**
+   * Whether to enable filtering
+   */
+  filterable?: boolean;
+
+  /**
    * Initial sort state
    */
   initialSort?: SortState;
@@ -139,6 +144,7 @@ const DataTableComponent = <
   loading = false,
   searchable = true,
   selectable = false,
+  filterable = false,
   initialSort,
   initialFilter,
   itemsPerPage = 10,

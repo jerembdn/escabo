@@ -15,12 +15,12 @@ datasource db {
 
 enum QueueType {
   // TFT
-  RANKED_TFT
-  RANKED_TFT_DOUBLE_UP
+  ranked_tft
+  ranked_tft_double_up
 
   // LOL
-  RANKED_SOLO_5x5
-  RANKED_FLEX_SR
+  ranked_solo_5x5
+  ranked_flex_sr
 }
 
 enum RankedTier {
@@ -47,7 +47,7 @@ enum RegionId {
   EUW
 }
 
-model SummonerLeague {
+model SummonerLeagueEntity {
   id           String          @id @default(auto()) @map("_id") @db.ObjectId
   leagueId     String
   queueType    QueueType
@@ -58,13 +58,13 @@ model SummonerLeague {
   leaguePoints Int
 
   // Relation to Summoner
-  summoner   Summoner @relation(fields: [summonerId], references: [id])
-  summonerId String   @db.ObjectId
+  summoner   SummonerEntity @relation(fields: [summonerId], references: [id])
+  summonerId String         @db.ObjectId
 
   @@unique([summonerId, queueType])
 }
 
-model Summoner {
+model SummonerEntity {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   puuid         String   @unique
@@ -75,7 +75,7 @@ model Summoner {
   region        RegionId
 
   // Relation to SummonerLeague
-  leagues SummonerLeague[]
+  leagues SummonerLeagueEntity[]
 
   @@index([name])
 }

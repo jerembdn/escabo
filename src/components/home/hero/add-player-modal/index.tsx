@@ -1,17 +1,21 @@
 "use client";
 
 import { Regions } from "@/constants/regions";
-import type { APIReponse } from "@/types/api-response";
-import type { RiotAccountDto } from "@/types/dto/riot/riot-account.dto";
-import kitchn, { Button, Container, Icon, Input, Select } from "kitchn";
+import { APIReponse } from "@/types/api-response";
+import { RiotAccountDto } from "@/types/dto/riot/riot-account.dto";
+import kitchn, { Container, Icon, Input, Modal, Select } from "kitchn";
 import { Plus, X } from "lucide-react";
 import React from "react";
 
-type AddPlayerProps = {
-  game: "tft" | "lol";
+type AddSummonerModalProps = {
+  active: boolean;
+  close: () => void;
 };
 
-const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
+const AddSummonerModal: React.FC<AddSummonerModalProps> = ({
+  active,
+  close,
+}: AddSummonerModalProps) => {
   const [selectedRegion, setSelectedRegion] = React.useState<string>(
     Regions.EUW.id,
   );
@@ -23,7 +27,6 @@ const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
 
   const timer = React.useRef(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const handleSearch = React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const currentValue = event.target.value;
@@ -51,7 +54,6 @@ const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
           setError(null);
           setLoading(false);
 
-          event.target.value = "";
           event.target.blur();
         } else {
           setLoading(false);
@@ -62,14 +64,13 @@ const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
     [selectedRegion],
   );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const handleSubmit = React.useCallback(() => {
     if (!riotAccount) return;
 
     setLoading(true);
     setError(null);
 
-    fetch(`/api/${game}/ladder`, {
+    fetch("/api/ladder", {
       method: "POST",
       body: JSON.stringify({
         region: selectedRegion,
@@ -84,6 +85,7 @@ const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
         if (data.success) {
           setLoading(false);
           setRiotAccount(null);
+          close();
         } else {
           setLoading(false);
           setError(data.error.message);
@@ -93,49 +95,68 @@ const AddPlayer: React.FC<AddPlayerProps> = ({ game }: AddPlayerProps) => {
         setLoading(false);
         setError(error.message);
       });
-  }, [riotAccount, selectedRegion]);
+  }, [riotAccount, selectedRegion, close]);
 
   return (
-    <Container row gap={"small"}>
-      <SearchContainer>
-        <Input
-          placeholder="vrai jijon#EUW"
-          autoFocus
-          onChange={handleSearch}
-          error={error}
-          suffixStyling={false}
-          {...(error && {
-            suffix: <Icon icon={X} accent={"danger"} />,
-          })}
-        />
-      </SearchContainer>
+    <Modal.Modal active={active} onClickOutside={close}>
+      <Modal.Body>
+        <Modal.Header>
+          <Modal.Title>Ajouter au ladder</Modal.Title>
+          <Modal.Subtitle>
+            Entre ton Riot ID pour ajouter ton compte au Ladder et comparer avec
+            tes amis.
+          </Modal.Subtitle>
+        </Modal.Header>
 
-      <Select
-        placeholder="Région"
-        defaultValue={Regions.EUW.id}
-        value={selectedRegion}
-        onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-          event.preventDefault();
+        <Container row gap={"small"}>
+          <SearchContainer>
+            <Input
+              placeholder="vrai jijon#EUW"
+              autoFocus
+              onChange={handleSearch}
+              error={error}
+              suffixStyling={false}
+              {...(error && {
+                suffix: <Icon icon={X} accent={"danger"} />,
+              })}
+            />
+          </SearchContainer>
 
-          setSelectedRegion(event.target.value);
-        }}
-      >
-        {Object.values(Regions).map((region) => (
-          <option key={region.id} value={region.id}>
-            {region.name}
-          </option>
-        ))}
-      </Select>
+          <Select
+            placeholder="Région"
+            defaultValue={Regions.EUW.id}
+            value={selectedRegion}
+            onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+              event.preventDefault();
 
-      <Button
-        prefix={<Plus size={16} />}
-        loading={loading}
-        disabled={!riotAccount}
-        onClick={handleSubmit}
-      >
-        Ajouter au ladder
-      </Button>
-    </Container>
+              setSelectedRegion(event.target.value);
+            }}
+          >
+            {Object.values(Regions).map((region) => (
+              <option key={region.id} value={region.id}>
+                {region.name}
+              </option>
+            ))}
+          </Select>
+        </Container>
+      </Modal.Body>
+
+      <Modal.Actions>
+        <Modal.Action type={"dark"} onClick={close}>
+          Annuler
+        </Modal.Action>
+
+        <Modal.Action
+          type={"light"}
+          onClick={handleSubmit}
+          prefix={<Plus size={16} />}
+          loading={loading}
+          disabled={!riotAccount}
+        >
+          Ajouter
+        </Modal.Action>
+      </Modal.Actions>
+    </Modal.Modal>
   );
 };
 
@@ -143,4 +164,4 @@ const SearchContainer = kitchn(Container)`
   flex: 1;
 `;
 
-export default AddPlayer;
+export default AddSummonerModal;

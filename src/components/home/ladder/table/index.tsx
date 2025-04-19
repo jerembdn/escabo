@@ -1,6 +1,6 @@
 import DataTable from "@/components/data-table";
 import type { DataTableColumn } from "@/types/table";
-import type { QueueType, Summoner } from "@/types/summoner";
+import type { Summoner } from "@/types/summoner";
 import { displayRank } from "@/utils/display-rank";
 import {
   type AccentColors,
@@ -10,6 +10,7 @@ import {
   Text,
   Tooltip,
 } from "kitchn";
+import { QueueType } from "@/types/queue-type";
 
 type LadderTableProps = {
   summoners?: Summoner[];
@@ -118,7 +119,6 @@ const LadderTable: React.FC<LadderTableProps> = ({
     <DataTable
       columns={columns}
       data={tableData}
-      searchPlaceholder="Rechercher un joueur"
       loading={loading}
       itemsPerPage={15}
     />

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, res: NextResponse<ResponseData>) {
   const region = Regions[searchRegion];
 
   // - Check if summoner exists in database
-  const existingSummoner = await prisma.summoner.findFirst({
+  const existingSummoner = await prisma.summonerEntity.findFirst({
     where: {
       name: decodeURIComponent(searchTerm),
       region: region.id,
@@ -62,34 +62,11 @@ export async function GET(req: NextRequest, res: NextResponse<ResponseData>) {
   }
 
   try {
-    const summoner = await riotClient.getSummonerDataByName(
-      searchTerm,
-      region.id,
-    );
-
-    if (!summoner) {
-      return Response.json(
-        {
-          success: false,
-          error: {
-            message: "Summoner not found",
-          },
-        },
-        {
-          status: 404,
-        },
-      );
-    }
-
-    const [gameName, tagLine] = summoner.name.split("#");
+    const account = await riotClient.getAccountByName(searchTerm, region.id);
 
     return Response.json({
       success: true,
-      data: {
-        gameName,
-        tagLine,
-        puuid: summoner.puuid,
-      } satisfies RiotAccountDto,
+      data: account,
     });
   } catch (error) {
     return Response.json(
@@ -101,7 +78,7 @@ export async function GET(req: NextRequest, res: NextResponse<ResponseData>) {
         },
       },
       {
-        status: 404,
+        status: 400,
       },
     );
   }

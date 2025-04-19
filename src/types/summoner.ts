@@ -1,14 +1,5 @@
+import { QueueType } from "./queue-type";
 import type { RegionId } from "./region";
-
-export enum QueueType {
-  // - TFT
-  RankedTft = "RANKED_TFT",
-  RankedTftDoubleUp = "RANKED_TFT_DOUBLE_UP",
-
-  // - LOL
-  RankedSolo = "RANKED_SOLO_5x5",
-  RankedFlex = "RANKED_FLEX_SR",
-}
 
 export type RankedTier =
   | "IRON"

@@ -1,10 +1,15 @@
 "use client";
 
-import kitchn from "kitchn";
+import kitchn, { Container } from "kitchn";
 import type React from "react";
+import Footer from "./footer";
 
 const Layout: React.FC<React.PropsWithChildren> = ({ children }) => (
-	<Wrapper>{children}</Wrapper>
+  <Wrapper>
+    <Container>{children}</Container>
+
+    <Footer />
+  </Wrapper>
 );
 
 const Wrapper = kitchn.main`

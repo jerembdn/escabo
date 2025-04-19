@@ -1,21 +1,38 @@
 import type { RiotAccountDto } from "@/types/dto/riot/riot-account.dto";
 import { env } from "../../env.mjs";
-import {
-  QueueType,
-  type RankedDivision,
-  type RankedTier,
-  type Summoner,
-} from "@/types/summoner";
 import type { RegionId } from "@/types/region";
 import { Regions } from "@/constants/regions";
 import type { RiotSummonerDto } from "@/types/dto/riot/riot-summoner.dto";
 import type { RiotLeagueEntryDto } from "@/types/dto/riot/riot-league-entry.dto";
+import { EndpointRateLimits } from "@/types/api/endpoint";
+import { RiotMatchDto } from "@/types/dto/riot/riot-match.dto";
+import { RankedDivision, RankedTier, Summoner } from "@/types/summoner";
+import { QueueType } from "@/types/queue-type";
 
 /**
  * Riot API Client for interacting with the Riot Games API
  */
 export class RiotApiClient {
   private apiKey: string;
+
+  private rateLimiters: Map<
+    string,
+    {
+      queue: Array<() => Promise<unknown>>;
+      processing: boolean;
+      lastRequestTime: number;
+    }
+  > = new Map();
+
+  private endpointRateLimits: EndpointRateLimits = {
+    account: { requests: 100, seconds: 120 },
+    summoner: { requests: 500, seconds: 600 },
+    league: { requests: 1000, seconds: 600 },
+    "match-list": { requests: 100, seconds: 120 },
+    match: { requests: 1000, seconds: 600 },
+
+    default: { requests: 20, seconds: 1 },
+  };
 
   // Rank tiers for sorting
   private tierValues: Record<RankedTier, number> = {
@@ -45,6 +62,15 @@ export class RiotApiClient {
    */
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+
+    // Initialize rate limiters for each endpoint type
+    for (const endpoint in this.endpointRateLimits) {
+      this.rateLimiters.set(endpoint, {
+        queue: [],
+        processing: false,
+        lastRequestTime: 0,
+      });
+    }
   }
 
   /**
@@ -56,11 +82,90 @@ export class RiotApiClient {
   }
 
   /**
+   * Process the rate limit queue for a specific endpoint
+   * @param endpointType The endpoint type (account, summoner, etc.)
+   */
+  private async processQueue(endpointType: string): Promise<void> {
+    const limiter = this.rateLimiters.get(endpointType);
+
+    if (!limiter || limiter.processing || limiter.queue.length === 0) {
+      return;
+    }
+
+    limiter.processing = true;
+
+    try {
+      const limits =
+        this.endpointRateLimits[endpointType] ||
+        this.endpointRateLimits.default;
+      const now = Date.now();
+      const timeSinceLastRequest = now - limiter.lastRequestTime;
+      const minInterval = (limits.seconds * 1000) / limits.requests;
+
+      if (limiter.lastRequestTime > 0 && timeSinceLastRequest < minInterval) {
+        const waitTime = minInterval - timeSinceLastRequest;
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
+
+      const nextRequest = limiter.queue.shift();
+      if (nextRequest) {
+        limiter.lastRequestTime = Date.now();
+        await nextRequest();
+      }
+    } finally {
+      limiter.processing = false;
+
+      if (limiter.queue.length > 0) {
+        void this.processQueue(endpointType);
+      }
+    }
+  }
+
+  /**
+   * Add a request to the rate limit queue and process it when ready
+   * @param endpointType The endpoint type
+   * @param requestFn The request function to execute
+   * @returns Promise with the request result
+   */
+  private async scheduleRequest<T>(
+    endpointType: string,
+    requestFn: () => Promise<T>,
+  ): Promise<T> {
+    const limiterKey = this.endpointRateLimits[endpointType]
+      ? endpointType
+      : "default";
+    const limiter = this.rateLimiters.get(limiterKey);
+
+    if (!limiter) {
+      throw new Error(`Rate limiter not found for endpoint: ${limiterKey}`);
+    }
+
+    return new Promise<T>((resolve, reject) => {
+      limiter.queue.push(async () => {
+        try {
+          const result = await requestFn();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      if (!limiter.processing) {
+        void this.processQueue(limiterKey);
+      }
+    });
+  }
+
+  /**
    * Helper method to make API requests
    * @param url API endpoint URL
    * @returns Promise with JSON response
    */
-  private async makeRequest<T>(path: URL | string, host: string): Promise<T> {
+  private async makeRequest<T>(
+    path: URL | string,
+    host: string,
+    endpointType: string,
+  ): Promise<T> {
     if (!this.apiKey) {
       throw new Error("API key is not set");
     }
@@ -79,16 +184,30 @@ export class RiotApiClient {
       redirect: "follow",
     };
 
-    // Make the request
-    const response = await fetch(url.toString(), options);
+    return this.scheduleRequest<T>(endpointType, async () => {
+      // Make the request
+      const response = await fetch(url.toString(), options);
 
-    if (!response.ok) {
-      throw new Error(
-        `API request failed: ${response.status} ${response.statusText}`,
-      );
-    }
+      // Handle rate limit responses
+      if (response.status === 429) {
+        const retryAfter = response.headers.get("Retry-After");
+        const waitTime = retryAfter
+          ? Number.parseInt(retryAfter, 10) * 1000
+          : 10000;
 
-    return (await response.json()) as T;
+        // Wait and retry
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+        return this.makeRequest<T>(path, host, endpointType);
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          `API request failed: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      return (await response.json()) as T;
+    });
   }
 
   /**
@@ -183,6 +302,7 @@ export class RiotApiClient {
     return this.makeRequest<RiotAccountDto>(
       url,
       this.getRegionalHost(regionId),
+      "account",
     );
   }
 
@@ -202,6 +322,7 @@ export class RiotApiClient {
     return this.makeRequest<RiotSummonerDto>(
       url,
       this.getPlatformHost(regionId),
+      "summoner",
     );
   }
 
@@ -225,6 +346,7 @@ export class RiotApiClient {
     return this.makeRequest<RiotLeagueEntryDto[]>(
       url,
       this.getPlatformHost(region),
+      game === "tft" ? "lol-league" : "tft-league",
     );
   }
 
@@ -290,72 +412,56 @@ export class RiotApiClient {
   }
 
   /**
-   * Get recent match history for a summoner
-   * @param summonerName Summoner name
+   * Get match IDs by summoner PUUID
+   *
+   * @param puuid Player UUID
    * @param region Region code
    * @param count Number of matches to retrieve
+   * @param game Game type (lol or tft)
+   * @returns Promise with array of match IDs
+   */
+  async getMatchIdsByPuuid(
+    puuid: string,
+    region: RegionId,
+    count = 10,
+    game: "lol" | "tft" = "lol",
+  ): Promise<string[]> {
+    const url =
+      game === "lol"
+        ? `/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`
+        : `/tft/match/v1/matches/by-puuid/${puuid}/ids?count=${count}`;
+
+    return this.makeRequest<string[]>(
+      url,
+      this.getRegionalHost(region),
+      "match-list",
+    );
+  }
+
+  /**
+   * Get match details by match ID
+   *
+   * @param matchId Match ID
+   * @param region Region code
+   * @param game Game type (lol or tft)
    * @returns Promise with match data
    */
-  /* public async getRecentMatches(
-		summonerName: string,
-		region: Region,
-		count = 10,
-	): Promise<ApiResponse> {
-		try {
-			// First get the summoner data to get the PUUID
-			const summonerData = await this.getSummonerByName(summonerName, region);
+  async getMatchById(
+    matchId: string,
+    region: RegionId,
+    game: "lol" | "tft" = "lol",
+  ): Promise<RiotMatchDto> {
+    const url =
+      game === "lol"
+        ? `/lol/match/v5/matches/${matchId}`
+        : `/tft/match/v1/matches/${matchId}`;
 
-			// Get match IDs
-			const matchIds = await this.getMatchesByPuuid(
-				summonerData.puuid,
-				region,
-				count,
-			);
-
-			// Get full details for each match
-			const matchPromises = matchIds.map((matchId) =>
-				this.getMatchById(matchId, region),
-			);
-			const matches = await Promise.all(matchPromises);
-
-			// Process matches to extract the summoner's performance
-			const processedMatches = matches
-				.map((match) => {
-					const participant = match.info.participants.find(
-						(p: any) => p.puuid === summonerData.puuid,
-					);
-
-					if (!participant) {
-						return null;
-					}
-
-					return {
-						matchId: match.metadata.match_id,
-						gameDate: new Date(match.info.game_datetime),
-						gameLength: match.info.game_length,
-						placement: participant.placement,
-						level: participant.level,
-						playersEliminated: participant.players_eliminated,
-						totalDamage: participant.total_damage_to_players,
-						units: participant.units,
-						traits: participant.traits,
-						augments: participant.augments,
-					};
-				})
-				.filter((match) => match !== null);
-
-			return {
-				status: "success",
-				matches: processedMatches,
-			};
-		} catch (error) {
-			console.error("Error fetching match history:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Unknown error",
-			};
-		}
-	} */
+    return this.makeRequest<RiotMatchDto>(
+      url,
+      this.getRegionalHost(region),
+      "match",
+    );
+  }
 }
 
 export const riotClient = new RiotApiClient(env.RG_API_KEY);
