@@ -10,7 +10,7 @@ import kitchn, {
 } from "kitchn";
 
 const Footer: React.FC = () => (
-  <Container paddingBottom={10}>
+  <Container paddingBottom={10} marginTop={40}>
     <Text>
       made with ❤️ by{" "}
       <Tooltip text="le goat du dév">

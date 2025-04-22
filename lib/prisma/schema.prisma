@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,14 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum GameType {
+  TFT
+  LOL
+}
+
 enum QueueType {
   // TFT
-  ranked_tft
-  ranked_tft_double_up
+  RANKED_TFT
+  RANKED_TFT_DOUBLE_UP
 
   // LOL
-  ranked_solo_5x5
-  ranked_flex_sr
+  RANKED_SOLO_5x5
+  RANKED_FLEX_SR
 }
 
 enum RankedTier {
@@ -47,8 +46,45 @@ enum RegionId {
   EUW
 }
 
-model SummonerLeagueEntity {
-  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+model Player {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  name          String
+  profileIconId Int
+  level         Int
+  region        RegionId
+
+  gameIdentifiers GameIdentifier[]
+
+  leagues PlayerLeague[]
+
+  ladders LadderPlayer[]
+
+  ownedLadders Ladder[] @relation("LadderOwner")
+
+  lastUpdated DateTime @default(now())
+
+  @@index([name])
+}
+
+model GameIdentifier {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  gameType   GameType
+  puuid      String
+  summonerId String   @unique
+  accountId  String   @unique
+
+  player   Player @relation(fields: [playerId], references: [id])
+  playerId String @db.ObjectId
+
+  @@unique([playerId, gameType])
+  @@index([puuid])
+  @@index([playerId])
+}
+
+model PlayerLeague {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
   leagueId     String
   queueType    QueueType
   tier         RankedTier
@@ -57,25 +93,42 @@ model SummonerLeagueEntity {
   losses       Int
   leaguePoints Int
 
-  // Relation to Summoner
-  summoner   SummonerEntity @relation(fields: [summonerId], references: [id])
-  summonerId String         @db.ObjectId
+  player   Player @relation(fields: [playerId], references: [id])
+  playerId String @db.ObjectId
 
-  @@unique([summonerId, queueType])
+  @@unique([playerId, queueType])
 }
 
-model SummonerEntity {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  puuid         String   @unique
-  summonerId    String   @unique
-  accountId     String   @unique
-  profileIconId Int
-  level         Int
-  region        RegionId
+model Ladder {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  // Relation to SummonerLeague
-  leagues SummonerLeagueEntity[]
+  name String
+  slug String @unique
+
+  gameType  GameType
+  queueType QueueType
+  region    RegionId?
+
+  owner   Player @relation("LadderOwner", fields: [ownerId], references: [id])
+  ownerId String @db.ObjectId
+
+  players LadderPlayer[]
 
   @@index([name])
+}
+
+model LadderPlayer {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  ladder   Ladder @relation(fields: [ladderId], references: [id])
+  ladderId String @db.ObjectId
+
+  player   Player @relation(fields: [playerId], references: [id])
+  playerId String @db.ObjectId
+
+  joinedAt DateTime @default(now())
+
+  @@unique([ladderId, playerId])
+  @@index([ladderId])
+  @@index([playerId])
 }

@@ -1,1 +1,1 @@
-export type RiotMatchDto = {};
+export type RiotMatchDto = object;

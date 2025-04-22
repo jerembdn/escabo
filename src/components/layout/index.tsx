@@ -21,6 +21,12 @@ const Wrapper = kitchn.main`
   min-height: 100vh;
   width: 100%;
   margin: 0 auto;
+
+  padding: 0 10px;
+
+  @media (min-width: 1220px) {
+    padding: 0;
+  }
 `;
 
 export default Layout;

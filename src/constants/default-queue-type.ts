@@ -1,7 +1,6 @@
-import { Game } from "@/types/game";
-import { QueueType } from "@/types/queue-type";
+import { GameType, QueueType } from "@prisma/client";
 
-export const DefaultQueueType: Record<Game, QueueType> = {
-  lol: QueueType.RankedSolo,
-  tft: QueueType.RankedTft,
+export const DefaultQueueType: Record<GameType, QueueType> = {
+  LOL: QueueType.RANKED_SOLO_5x5,
+  TFT: QueueType.RANKED_TFT,
 };

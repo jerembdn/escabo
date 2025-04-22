@@ -1,8 +1,9 @@
 import { Regions } from "@/constants/regions";
-import { riotClient } from "@/services/riot-client";
-import type { APIReponse } from "@/types/api-response";
-import type { Summoner } from "@/types/summoner";
+import { lolClient, tftClient } from "@/services/riot-client";
+import { RiotLeagueEntryDto } from "@/types/dto/riot/riot-league-entry.dto";
+import { findQueueType } from "@/utils/find-queue-type";
 import { prisma } from "@lib/prisma/client";
+import { GameType, RankedDivision, RankedTier } from "@prisma/client";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -22,8 +23,6 @@ const postSummonerToLadderDto = z.object({
   }),
 });
 
-type ResponseData = APIReponse<Summoner>;
-
 const POST = async (req: NextRequest) => {
   const body = await req.json();
   const validation = postSummonerToLadderDto.safeParse(body);
@@ -41,58 +40,63 @@ const POST = async (req: NextRequest) => {
       },
     );
   }
-  const { region, summonerName } = validation.data;
+  const { region: regionStr, summonerName } = validation.data;
 
-  // - Check if summoner exists in database
-  const existingSummoner = await prisma.summonerEntity.findFirst({
+  const region = Regions[regionStr];
+
+  // - Check if player exists in database
+  const existingPlayer = await prisma.player.findFirst({
     where: {
       name: summonerName,
-      region: Regions[region].id,
+      region: region.id,
     },
   });
 
-  if (existingSummoner) {
+  if (existingPlayer) {
     return Response.json({
       success: false,
       error: {
-        message: "Summoner is already registered",
+        message: "Player is already registered",
       },
     });
   }
 
-  const preSummoner = await riotClient.getSummonerDataByName(
-    summonerName,
-    Regions[region].id,
-  );
+  const dataPromises = [
+    tftClient.getSummonerDataByName(summonerName, region.id),
+    lolClient.getSummonerDataByName(summonerName, region.id),
+  ];
+  const [tft, lol] = await Promise.all(dataPromises);
 
-  if (!preSummoner) {
-    return Response.json(
-      {
-        success: false,
-        error: {
-          message: "Summoner not found",
-        },
-      },
-      {
-        status: 404,
-      },
-    );
-  }
+  //TODO - Fetch match history for TFT to get top4 count
 
   // - Add summoner to database
-  const summoner = await prisma.summonerEntity.create({
+  const player = await prisma.player.create({
     data: {
-      puuid: preSummoner.puuid,
-      name: preSummoner.name,
-      summonerId: preSummoner.summonerId,
-      level: preSummoner.level,
-      region: Regions[region].id,
-      profileIconId: preSummoner.profileIconId,
-      accountId: preSummoner.accountId,
+      name: `${lol.account.gameName}#${lol.account.tagLine}`,
+      profileIconId: lol.summoner.profileIconId,
+      level: lol.summoner.summonerLevel,
+      region: region.id,
+      gameIdentifiers: {
+        create: [
+          {
+            gameType: GameType.LOL,
+            summonerId: lol.summoner.id,
+            puuid: lol.summoner.puuid,
+            accountId: lol.summoner.accountId,
+          },
+          {
+            gameType: GameType.TFT,
+            summonerId: tft.summoner.id,
+            puuid: tft.summoner.puuid,
+            accountId: tft.summoner.accountId,
+          },
+        ],
+      },
       leagues: {
-        createMany: {
-          data: preSummoner.leagues,
-        },
+        create: [
+          ...tft.rankedEntries.map(buildRankedEntry),
+          ...lol.rankedEntries.map(buildRankedEntry),
+        ],
       },
     },
     include: {
@@ -102,8 +106,18 @@ const POST = async (req: NextRequest) => {
 
   return Response.json({
     success: true,
-    data: summoner,
+    data: player,
   });
 };
+
+const buildRankedEntry = (entry: RiotLeagueEntryDto) => ({
+  leagueId: entry.leagueId,
+  leaguePoints: entry.leaguePoints,
+  losses: entry.losses,
+  wins: entry.wins,
+  queueType: findQueueType(entry.queueType),
+  tier: entry.tier as RankedTier,
+  rank: entry.rank as RankedDivision,
+});
 
 export { POST };

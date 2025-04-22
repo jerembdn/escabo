@@ -1,20 +1,16 @@
 import type { RiotAccountDto } from "@/types/dto/riot/riot-account.dto";
 import { env } from "../../env.mjs";
-import type { RegionId } from "@/types/region";
 import { Regions } from "@/constants/regions";
 import type { RiotSummonerDto } from "@/types/dto/riot/riot-summoner.dto";
 import type { RiotLeagueEntryDto } from "@/types/dto/riot/riot-league-entry.dto";
 import { EndpointRateLimits } from "@/types/api/endpoint";
 import { RiotMatchDto } from "@/types/dto/riot/riot-match.dto";
-import { RankedDivision, RankedTier, Summoner } from "@/types/summoner";
-import { QueueType } from "@/types/queue-type";
+import { GameType, RankedDivision, RankedTier, RegionId } from "@prisma/client";
 
 /**
  * Riot API Client for interacting with the Riot Games API
  */
 export class RiotApiClient {
-  private apiKey: string;
-
   private rateLimiters: Map<
     string,
     {
@@ -60,9 +56,10 @@ export class RiotApiClient {
    * Create a new TFT API client
    * @param apiKey Your Riot Games API key
    */
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-
+  constructor(
+    private readonly apiKey: string,
+    private readonly gameType: GameType,
+  ) {
     // Initialize rate limiters for each endpoint type
     for (const endpoint in this.endpointRateLimits) {
       this.rateLimiters.set(endpoint, {
@@ -71,14 +68,6 @@ export class RiotApiClient {
         lastRequestTime: 0,
       });
     }
-  }
-
-  /**
-   * Update the API key
-   * @param newApiKey New Riot Games API key
-   */
-  public setApiKey(newApiKey: string): void {
-    this.apiKey = newApiKey;
   }
 
   /**
@@ -202,7 +191,7 @@ export class RiotApiClient {
 
       if (!response.ok) {
         throw new Error(
-          `API request failed: ${response.status} ${response.statusText}`,
+          `[${this.gameType}_CLIENT] [${response.url}] API request failed: ${response.status} ${response.statusText}`,
         );
       }
 
@@ -234,21 +223,6 @@ export class RiotApiClient {
     }
 
     return Regions[region].routing.regional;
-  }
-
-  private getQueueType(queueType: string): QueueType {
-    switch (queueType) {
-      case "RANKED_TFT":
-        return QueueType.RankedTft;
-      case "RANKED_TFT_DOUBLE_UP":
-        return QueueType.RankedTftDoubleUp;
-      case "RANKED_SOLO_5x5":
-        return QueueType.RankedSolo;
-      case "RANKED_FLEX_SR":
-        return QueueType.RankedFlex;
-      default:
-        throw new Error(`Unknown queue type: ${queueType}`);
-    }
   }
 
   /**
@@ -307,6 +281,26 @@ export class RiotApiClient {
   }
 
   /**
+   * Gets RG account data by PUUID
+   *
+   * @param puuid Player UUID to look up
+   * @param regionId Region code
+   * @returns Promise with account data
+   */
+  async getAccountByPuuid(
+    puuid: string,
+    regionId: RegionId,
+  ): Promise<RiotAccountDto> {
+    const url = `/riot/account/v1/accounts/by-puuid/${puuid}`;
+
+    return this.makeRequest<RiotAccountDto>(
+      url,
+      this.getRegionalHost(regionId),
+      "account",
+    );
+  }
+
+  /**
    * Gets summoner data by puuid
    *
    * @param summonerPuuid Summoner PUUID to look up
@@ -317,7 +311,10 @@ export class RiotApiClient {
     summonerPuuid: string,
     regionId: RegionId,
   ): Promise<RiotSummonerDto> {
-    const url = `/lol/summoner/v4/summoners/by-puuid/${summonerPuuid}`;
+    const url = {
+      TFT: `/tft/summoner/v1/summoners/by-puuid/${summonerPuuid}`,
+      LOL: `/lol/summoner/v4/summoners/by-puuid/${summonerPuuid}`,
+    }[this.gameType];
 
     return this.makeRequest<RiotSummonerDto>(
       url,
@@ -336,17 +333,39 @@ export class RiotApiClient {
   async getRankedEntries(
     summonerId: string,
     region: RegionId,
-    game: "lol" | "tft" = "tft",
   ): Promise<RiotLeagueEntryDto[]> {
-    const url =
-      game === "tft"
-        ? `/tft/league/v1/entries/by-summoner/${summonerId}`
-        : `/lol/league/v4/entries/by-summoner/${summonerId}`;
+    const url = {
+      TFT: `/tft/league/v1/entries/by-summoner/${summonerId}`,
+      LOL: `/lol/league/v4/entries/by-summoner/${summonerId}`,
+    }[this.gameType];
 
     return this.makeRequest<RiotLeagueEntryDto[]>(
       url,
       this.getPlatformHost(region),
-      game === "tft" ? "lol-league" : "tft-league",
+      "league",
+    );
+  }
+
+  /**
+   * Gets ranked entries for a summoner by PUUID
+   *
+   * @param puuid Summoner PUUID to look up
+   * @param region Region code
+   * @returns Promise with ranked entries
+   */
+  async getRankedEntriesByPuuid(
+    puuid: string,
+    region: RegionId,
+  ): Promise<RiotLeagueEntryDto[]> {
+    const url = {
+      LOL: `/lol/league/v4/entries/by-puuid/${puuid}`,
+      TFT: `/tft/league/v1/by-puuid/${puuid}`,
+    }[this.gameType];
+
+    return this.makeRequest<RiotLeagueEntryDto[]>(
+      url,
+      this.getPlatformHost(region),
+      "league",
     );
   }
 
@@ -360,55 +379,67 @@ export class RiotApiClient {
   async getSummonerDataByName(
     summonerName: string,
     region: RegionId,
-  ): Promise<Summoner> {
-    // Get account data
-    const accountData = await this.getAccountByName(summonerName, region);
+  ): Promise<{
+    account: RiotAccountDto;
+    summoner: RiotSummonerDto;
+    rankedEntries: RiotLeagueEntryDto[];
+  }> {
+    const account = await this.getAccountByName(summonerName, region);
 
-    if (!accountData) {
+    if (!account) {
       throw new Error("Account not found");
     }
 
-    // - Get summoner data
-    const summonerData = await this.getSummonerByPuuid(
-      accountData.puuid,
-      region,
-    );
+    const summoner = await this.getSummonerByPuuid(account.puuid, region);
 
-    if (!summonerData) {
+    if (!summoner) {
       throw new Error("Summoner not found");
     }
 
-    // Get ranked entries
-    const rankedEntries = await Promise.all([
-      ...(await this.getRankedEntries(summonerData.id, region, "lol")),
-      ...(await this.getRankedEntries(summonerData.id, region, "tft")),
-    ]);
+    const rankedEntries = await this.getRankedEntries(summoner.id, region);
 
     if (!rankedEntries) {
       throw new Error("Ranked entries not found");
     }
 
-    // Create the final summoner object
-    const summoner: Summoner = {
-      name: `${accountData.gameName}#${accountData.tagLine}`,
-      puuid: summonerData.puuid,
-      summonerId: summonerData.id,
-      accountId: summonerData.accountId,
-      profileIconId: summonerData.profileIconId,
-      level: summonerData.summonerLevel,
-      region,
-      leagues: rankedEntries.map((entry) => ({
-        leagueId: entry.leagueId,
-        leaguePoints: entry.leaguePoints,
-        losses: entry.losses,
-        wins: entry.wins,
-        queueType: this.getQueueType(entry.queueType),
-        tier: entry.tier as RankedTier,
-        rank: entry.rank as RankedDivision,
-      })),
+    return {
+      account,
+      summoner,
+      rankedEntries,
     };
+  }
 
-    return summoner;
+  async getSummonerRefreshDataByPuuid(
+    puuid: string,
+    region: RegionId,
+  ): Promise<{
+    account: RiotAccountDto;
+    summoner: RiotSummonerDto;
+    rankedEntries: RiotLeagueEntryDto[];
+  }> {
+    const rankedEntries = await this.getRankedEntriesByPuuid(puuid, region);
+
+    if (!rankedEntries || rankedEntries.length === 0) {
+      throw new Error(`No ranked entries found for puuid ${puuid}`);
+    }
+
+    const account = await this.getAccountByPuuid(puuid, region);
+
+    if (!account) {
+      throw new Error(`Account not found for puuid ${puuid}`);
+    }
+
+    const summoner = await this.getSummonerByPuuid(puuid, region);
+
+    if (!summoner) {
+      throw new Error(`Summoner not found for puuid ${puuid}`);
+    }
+
+    return {
+      account,
+      summoner,
+      rankedEntries,
+    };
   }
 
   /**
@@ -424,12 +455,11 @@ export class RiotApiClient {
     puuid: string,
     region: RegionId,
     count = 10,
-    game: "lol" | "tft" = "lol",
   ): Promise<string[]> {
-    const url =
-      game === "lol"
-        ? `/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`
-        : `/tft/match/v1/matches/by-puuid/${puuid}/ids?count=${count}`;
+    const url = {
+      TFT: `/tft/match/v1/matches/by-puuid/${puuid}/ids?count=${count}`,
+      LOL: `/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`,
+    }[this.gameType];
 
     return this.makeRequest<string[]>(
       url,
@@ -446,15 +476,11 @@ export class RiotApiClient {
    * @param game Game type (lol or tft)
    * @returns Promise with match data
    */
-  async getMatchById(
-    matchId: string,
-    region: RegionId,
-    game: "lol" | "tft" = "lol",
-  ): Promise<RiotMatchDto> {
-    const url =
-      game === "lol"
-        ? `/lol/match/v5/matches/${matchId}`
-        : `/tft/match/v1/matches/${matchId}`;
+  async getMatchById(matchId: string, region: RegionId): Promise<RiotMatchDto> {
+    const url = {
+      TFT: `/tft/match/v1/matches/${matchId}`,
+      LOL: `/lol/match/v5/matches/${matchId}`,
+    }[this.gameType];
 
     return this.makeRequest<RiotMatchDto>(
       url,
@@ -464,4 +490,5 @@ export class RiotApiClient {
   }
 }
 
-export const riotClient = new RiotApiClient(env.RG_API_KEY);
+export const tftClient = new RiotApiClient(env.RG_TFT_API_KEY, GameType.TFT);
+export const lolClient = new RiotApiClient(env.RG_LOL_API_KEY, GameType.LOL);

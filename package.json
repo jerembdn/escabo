@@ -40,7 +40,8 @@
     "typescript": "^5.0.4"
   },
   "prisma": {
-    "schema": "./lib/prisma/schema.prisma"
+    "schema": "./lib/prisma/schema.prisma",
+    "seed": "ts-node ./lib/prisma/seed.ts"
   },
   "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }

@@ -1,22 +1,13 @@
 import type { Metadata } from "next";
 
-// Configuration du site
 export const siteConfig = {
-  name: "onRuntime Studio",
-  description: "Agence digitale spécialisée en développement web, mobile et design UI/UX. Notre équipe d'experts transforme vos idées en solutions digitales performantes.",
-  url: process.env.NEXT_PUBLIC_APP_URL || "https://onruntime.com",
-  ogImage: "/og.jpg", // Image OG par défaut (fallback)
-  links: {
-    discord: "https://discord.gg/ucX9c5yXmX",
-    instagram: "https://www.instagram.com/onruntime/",
-    linkedin: "https://www.linkedin.com/company/onruntime",
-    github: "https://github.com/onruntime",
-    twitter: "https://twitter.com/onruntime",
-  },
+  name: "Escabo",
+  description: "Le ladder de la commu M8, imaginé par la truc family!!",
+  url: process.env.NEXT_PUBLIC_APP_URL || "https://escabo.jeremybdn.fr",
+  ogImage: "/og.jpg",
 };
 
-// Types possibles d'images OG
-export type OGImageType = 'default' | 'project' | 'service' | 'blog' | 'team' | 'legal';
+export type OGImageType = "default";
 
 /**
  * Génère l'URL pour l'image OG avec les paramètres fournis
@@ -24,17 +15,17 @@ export type OGImageType = 'default' | 'project' | 'service' | 'blog' | 'team' | 
 export function getOGImageUrl({
   title,
   description,
-  type = 'default',
+  type = "default",
 }: {
   title: string;
   description: string;
   type?: OGImageType;
 }): string {
   const params = new URLSearchParams();
-  
-  params.append('title', title);
-  params.append('description', description);
-  params.append('type', type);
+
+  params.append("title", title);
+  params.append("description", description);
+  params.append("type", type);
 
   return `${siteConfig.url}/api/og?${params.toString()}`;
 }
@@ -59,34 +50,33 @@ export function constructMetadata({
   noIndex?: boolean;
   canonical?: string;
 } = {}): Metadata {
-  // Titre avec format cohérent
-  const formattedTitle = title === siteConfig.name 
-    ? title 
-    : `${title} | ${siteConfig.name}`;
-  
-  // Génère l'URL de l'image OG si elle n'est pas fournie explicitement
-  const finalOgImage = ogImage || getOGImageUrl({
-    title,
-    description,
-    type: ogImageType,
-  });
-  
+  const formattedTitle =
+    title === siteConfig.name ? title : `${title} | ${siteConfig.name}`;
+
+  const finalOgImage =
+    ogImage ||
+    getOGImageUrl({
+      title,
+      description,
+      type: ogImageType,
+    });
+
   return {
     title: formattedTitle,
     description,
-    
+
     metadataBase: new URL(siteConfig.url),
-    
-    ...(canonical && { 
-      alternates: { 
-        canonical 
-      }
+
+    ...(canonical && {
+      alternates: {
+        canonical,
+      },
     }),
-    
-    authors: [{ name: "onRuntime Studio", url: siteConfig.url }],
-    creator: "onRuntime Studio",
-    publisher: "onRuntime Studio",
-    
+
+    authors: [{ name: "Jérémy Baudrin", url: "https://jeremybdn.fr" }],
+    creator: "Jérémy Baudrin",
+    publisher: "Jérémy Baudrin",
+
     openGraph: {
       type: ogType,
       locale: "fr_FR",
@@ -103,28 +93,7 @@ export function constructMetadata({
         },
       ],
     },
-    
-    twitter: {
-      card: "summary_large_image",
-      title: formattedTitle,
-      description,
-      images: [finalOgImage],
-      creator: "@onruntime",
-      site: "@onruntime",
-    },
-    
-    icons: {
-      icon: [
-        { url: "/favicon.ico" },
-      ],
-      shortcut: "/favicon-16x16.png",
-      apple: [
-        { url: "/apple-touch-icon.png" },
-      ],
-    },
-    
-    manifest: "/site.webmanifest",
-    
+
     ...(noIndex && {
       robots: {
         index: false,

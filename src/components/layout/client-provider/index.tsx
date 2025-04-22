@@ -1,7 +1,5 @@
 "use client";
 
-import { KitchnProvider } from "kitchn";
-import { KitchnRegistry } from "kitchn/next";
 import { SWRConfig } from "swr";
 
 const ClientProvider = ({ children }: { children: React.ReactNode }) => {
@@ -13,9 +11,7 @@ const ClientProvider = ({ children }: { children: React.ReactNode }) => {
           fetch(resource, init).then((res) => res.json()),
       }}
     >
-      <KitchnRegistry>
-        <KitchnProvider>{children}</KitchnProvider>
-      </KitchnRegistry>
+      {children}
     </SWRConfig>
   );
 };
