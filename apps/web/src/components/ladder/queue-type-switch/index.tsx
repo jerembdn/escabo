@@ -31,6 +31,7 @@ const QueueTypeTabs: React.FC<QueueTypeSwitchProps> = ({
       marginTop={20}
       marginLeft={12}
       marginRight={12}
+      bottom={-1}
       tabs={tabs}
       selected={queueType}
       setSelected={(selectedQueueType) =>
