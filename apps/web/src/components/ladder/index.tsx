@@ -37,8 +37,12 @@ const Ladder: React.FC<LadderProps> = ({ gameType, queueType }) => {
           data
             ? data.map((player) => ({
                 ...player,
-                top4: 0,
-                top4rate: 0,
+                top4: player.wins,
+                top4rate: Math.round(
+                  (player.wins / (player.wins + player.losses)) * 100,
+                ),
+                wins: 0,
+                winrate: 0,
               }))
             : undefined
         }
