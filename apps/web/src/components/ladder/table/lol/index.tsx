@@ -1,10 +1,10 @@
+import { LadderPlayer } from "@/types/ladder/player";
 import type { DataTableColumn } from "@/types/table";
 import { displayRank } from "@/utils/display-rank";
-import { Avatar, Container, Image, Text, Tooltip } from "kitchn";
 import { getWinrateAccentColor } from "@/utils/get-winrate-accent-color";
-import LadderTable from "..";
 import { QueueType } from "@prisma/client";
-import { LadderPlayer } from "@/types/ladder/player";
+import { Avatar, Container, Image, Text, Tooltip } from "kitchn";
+import LadderTable from "..";
 
 export type LolLadderPlayer = LadderPlayer;
 

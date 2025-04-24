@@ -1,12 +1,12 @@
 "use client";
 
 import DataTable from "@/components/data-table";
+import { LadderPlayer } from "@/types/ladder/player";
 import type { DataTableColumn } from "@/types/table";
 import { Icon, Menu, Text, Tooltip, useModal } from "kitchn";
 import { Ellipsis, HardDriveDownload, Trash2 } from "lucide-react";
-import DeleteModal from "./modals/delete-modal";
 import React from "react";
-import { LadderPlayer } from "@/types/ladder/player";
+import DeleteModal from "./modals/delete-modal";
 
 type LadderTableProps<T> = {
   columns: DataTableColumn<T>[];

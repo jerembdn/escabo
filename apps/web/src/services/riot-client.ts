@@ -1,11 +1,11 @@
-import type { RiotAccountDto } from "@/types/dto/riot/riot-account.dto";
-import { env } from "../../env.mjs";
 import { Regions } from "@/constants/regions";
-import type { RiotSummonerDto } from "@/types/dto/riot/riot-summoner.dto";
-import type { RiotLeagueEntryDto } from "@/types/dto/riot/riot-league-entry.dto";
 import { EndpointRateLimits } from "@/types/api/endpoint";
+import type { RiotAccountDto } from "@/types/dto/riot/riot-account.dto";
+import type { RiotLeagueEntryDto } from "@/types/dto/riot/riot-league-entry.dto";
 import { RiotMatchDto } from "@/types/dto/riot/riot-match.dto";
+import type { RiotSummonerDto } from "@/types/dto/riot/riot-summoner.dto";
 import { GameType, RankedDivision, RankedTier, RegionId } from "@prisma/client";
+import { env } from "../../env.mjs";
 
 /**
  * Riot API Client for interacting with the Riot Games API

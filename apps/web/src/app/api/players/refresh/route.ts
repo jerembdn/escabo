@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { RiotApiClient, lolClient, tftClient } from "@/services/riot-client";
+import { findQueueType } from "@/utils/find-queue-type";
 import { prisma } from "@lib/prisma/client";
 import { GameType, RankedDivision, RankedTier } from "@prisma/client";
-import { lolClient, RiotApiClient, tftClient } from "@/services/riot-client";
-import { findQueueType } from "@/utils/find-queue-type";
+import { NextRequest, NextResponse } from "next/server";
 import { env } from "../../../../../env.mjs";
 
 const POST = async (req: NextRequest) => {

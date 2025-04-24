@@ -2,18 +2,13 @@
 
 import React from "react";
 import {
-  RiSearchLine,
-  RiFilterLine,
   RiCloseLine,
+  RiFilterLine,
+  RiSearchLine,
   RiSortAsc,
   RiSortDesc,
 } from "react-icons/ri";
 
-import {
-  type DataTableColumn,
-  type SortState,
-  type FilterState,
-} from "../../types/table";
 import kitchn, {
   Badge,
   Button,
@@ -26,6 +21,11 @@ import kitchn, {
   withDecorator,
   type KitchnComponent,
 } from "kitchn";
+import {
+  type DataTableColumn,
+  type FilterState,
+  type SortState,
+} from "../../types/table";
 
 type Props<T = undefined> = {
   /**

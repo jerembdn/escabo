@@ -8,7 +8,7 @@ branchName="$(git rev-parse --abbrev-ref HEAD)"
 # - [category/username]/[description] format is valid where:
 #   - category/username is alphanumeric with hyphens
 #   - description is lowercase letters with hyphens
-regex="^(develop|release|main)$|^([a-z0-9-]+)\/([a-z-]+)$"
+regex="^(develop|release|master)$|^([a-z0-9-]+)\/([a-z-]+)$"
 
 # Colorize output
 GREEN='\033[0;32m'

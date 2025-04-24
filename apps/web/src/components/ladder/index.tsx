@@ -1,12 +1,12 @@
 "use client";
 
+import type { APIReponse } from "@/types/api-response";
+import { LadderPlayer } from "@/types/ladder/player";
+import { GameType, QueueType } from "@prisma/client";
 import React from "react";
 import useSWR from "swr";
-import type { APIReponse } from "@/types/api-response";
 import LadderLolTable from "./table/lol";
 import LadderTftTable from "./table/tft";
-import { GameType, QueueType } from "@prisma/client";
-import { LadderPlayer } from "@/types/ladder/player";
 
 type LadderProps = {
   gameType: GameType;
