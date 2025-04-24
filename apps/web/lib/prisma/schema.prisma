@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum GameType {
+  TFT
+  LOL
+}
+
+enum QueueType {
+  // TFT
+  RANKED_TFT
+  RANKED_TFT_DOUBLE_UP
+
+  // LOL
+  RANKED_SOLO_5x5
+  RANKED_FLEX_SR
+}
+
+enum RankedTier {
+  IRON
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+  EMERALD
+  MASTER
+  GRANDMASTER
+  CHALLENGER
+}
+
+enum RankedDivision {
+  I
+  II
+  III
+  IV
+}
+
+enum RegionId {
+  EUW
+}
+
+model Player {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  name          String
+  profileIconId Int
+  level         Int
+  region        RegionId
+
+  gameIdentifiers GameIdentifier[]
+
+  leagues PlayerLeague[]
+
+  ladders JoinedLadderPlayer[]
+
+  ownedLadders Ladder[] @relation("LadderOwner")
+
+  lastUpdated DateTime @default(now())
+
+  @@index([name])
+}
+
+model GameIdentifier {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  gameType   GameType
+  puuid      String
+  summonerId String   @unique
+  accountId  String   @unique
+
+  player   Player @relation(fields: [playerId], references: [id])
+  playerId String @db.ObjectId
+
+  @@unique([playerId, gameType])
+  @@index([puuid])
+  @@index([playerId])
+}
+
+model PlayerLeague {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  leagueId     String
+  queueType    QueueType
+  rank         RankedTier
+  division     RankedDivision
+  wins         Int
+  losses       Int
+  leaguePoints Int
+
+  player   Player @relation(fields: [playerId], references: [id])
+  playerId String @db.ObjectId
+
+  @@unique([playerId, queueType])
+}
+
+model Ladder {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  name String
+  slug String @unique
+
+  gameType  GameType
+  queueType QueueType
+  region    RegionId?
+
+  owner   Player @relation("LadderOwner", fields: [ownerId], references: [id])
+  ownerId String @db.ObjectId
+
+  players JoinedLadderPlayer[]
+
+  @@index([name])
+}
+
+model JoinedLadderPlayer {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  ladder   Ladder @relation(fields: [ladderId], references: [id])
+  ladderId String @db.ObjectId
+
+  player   Player @relation(fields: [playerId], references: [id])
+  playerId String @db.ObjectId
+
+  joinedAt DateTime @default(now())
+
+  @@unique([ladderId, playerId])
+  @@index([ladderId])
+  @@index([playerId])
+}

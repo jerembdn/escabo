@@ -1,0 +1,26 @@
+{
+  "recommendations": [
+    "formulahendry.auto-close-tag",
+    "formulahendry.auto-rename-tag",
+    "mikestead.dotenv",
+    "dsznajder.es7-react-js-snippets",
+    "chouzz.vscode-better-align",
+    "biomejs.biome",
+    "aeschli.vscode-css-formatter",
+    "paulmolluzzo.convert-css-in-js",
+    "editorconfig.editorconfig",
+    "mhutchie.git-graph",
+    "github.vscode-github-actions",
+    "github.copilot",
+    "seatonjiang.gitmoji-vscode",
+    "davidanson.vscode-markdownlint",
+    "christian-kohler.npm-intellisense",
+    "unifiedjs.vscode-mdx",
+    "yoavbls.pretty-ts-errors",
+    "stripe.vscode-stripe",
+    "stylelint.vscode-stylelint",
+    "tonybaloney.vscode-pets",
+    "styled-components.vscode-styled-components",
+    "wakatime.vscode-wakatime"
+  ]
+}

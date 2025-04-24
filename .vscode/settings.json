@@ -1,0 +1,31 @@
+{
+  // - Editor
+  "editor.formatOnSave": true,
+  "editor.indentSize": 2,
+  "editor.detectIndentation": false,
+
+  // - Git
+  "git.enableCommitSigning": true,
+
+  // - Actions on save
+  "editor.codeActionsOnSave": {
+    "quickfix.biome": "always"
+  },
+
+  // - Lint and format
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "stylelint.vscode-stylelint"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+}

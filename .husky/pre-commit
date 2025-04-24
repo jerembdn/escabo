@@ -1,0 +1,19 @@
+echo ""
+echo "🐺 running pre-commit hooks..."
+
+set -e
+
+echo "📝 running linting and formatting..."
+pnpm lint:fix || {
+  echo "❌ linting failed"
+  exit 1
+}
+pnpm format:fix || {
+  echo "❌ formatting failed"
+  exit 1
+}
+
+echo "🔍 validating branch name..."
+bash "$(dirname -- "$0")/scripts/branch-name.sh"
+
+echo "✅ all pre-commit hooks passed!"

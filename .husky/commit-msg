@@ -1,0 +1,12 @@
+# Reference: https://docs.zymu.app/contributing/commits
+
+echo ""
+echo "🐺 running commit message validation..."
+
+# Validate commit message
+bash "$(dirname -- "$0")/scripts/commit-message.sh" "$1" || {
+  echo "❌ commit message validation failed"
+  exit 1
+}
+
+echo "✅ commit message is valid!"
